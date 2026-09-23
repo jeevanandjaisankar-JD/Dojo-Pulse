@@ -27,9 +27,9 @@ const MENTORS = [
   },
   {
     id: "mentor-2",
-    username: "dharini_s",
-    password: "Dharini@123",
-    name: "Dharini",
+    username: "dharani_s",
+    password: "Dharani@123",
+    name: "Dharani",
     email: "dharani@kalvium.com",
     role: "Kalvium Dojo Mentor",
     avatar: "https://scontent-maa3-1.cdninstagram.com/v/t51.82787-19/658541095_17921862777289011_6986807217871659660_n.jpg?_nc_cat=108&ccb=7-5&_nc_sid=bf7eb4&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=rbulusiAKfoQ7kNvwG6kX_u&_nc_oc=AdoB1i0KhPFKLGEPI-I5Nfif1ocBBsn6pdfAbT_b4v04qKm-SaRJeP6w4yv43GCqYbk&_nc_zt=24&_nc_ht=scontent-maa3-1.cdninstagram.com&_nc_gid=oPc1O4RrFH0JYGWCApCCug&_nc_ss=7baaf&oh=00_AQI8-k7Sg4VIGASH2uXqH5oV8VveH6z-2E5N5-NqwOsVwA&oe=6AB92CE9"
