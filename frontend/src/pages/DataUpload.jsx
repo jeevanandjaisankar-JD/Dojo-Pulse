@@ -1,297 +1,183 @@
-import React, { useState, useEffect } from 'react';
-import { uploadDojoFile, getUploadHistory } from '../services/api';
+import { useEffect, useState } from "react";
 import {
   UploadCloud,
-  FileSpreadsheet,
-  History,
+  FileText,
   CheckCircle2,
-  AlertTriangle,
   Clock,
-  Sparkles,
-  Award,
-  Code2
-} from 'lucide-react';
+} from "lucide-react";
+import { uploadDojoFile, getUploadHistory } from "../services/api";
 
-const DataUpload = () => {
+export default function DataUpload() {
   const [file, setFile] = useState(null);
-  const [slotNumber, setSlotNumber] = useState(1);
   const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState(null);
-  const [latestSummary, setLatestSummary] = useState(null);
   const [history, setHistory] = useState([]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-
-  const fetchHistory = async () => {
-    try {
-      const data = await getUploadHistory();
-      if (data.success) {
-        setHistory(data.history);
-      }
-    } catch (err) {
-      console.error('Failed to load upload history:', err);
-    } finally {
-      setLoadingHistory(false);
-    }
-  };
 
   useEffect(() => {
-    fetchHistory();
+    loadHistory();
   }, []);
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-      setMessage(null);
+  const loadHistory = async () => {
+    try {
+      const data = await getUploadHistory();
+      if (data.success) setHistory(data.history);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    if (!file) {
-      setMessage({ type: 'error', text: 'Please select a CSV file to upload.' });
-      return;
-    }
-
-    setUploading(true);
-    setMessage(null);
-    setLatestSummary(null);
+  const handleUpload = async () => {
+    if (!file) return alert("Please choose a CSV file");
 
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('slotNumber', String(slotNumber));
+    formData.append("file", file);
 
     try {
+      setUploading(true);
       const res = await uploadDojoFile(formData);
+
       if (res.success) {
-        setMessage({
-          type: 'success',
-          text: `File "${file.name}" uploaded successfully and processed with Python Pandas belt cleaner!`
-        });
-        setLatestSummary(res.summary);
+        alert("CSV uploaded successfully!");
         setFile(null);
-        fetchHistory();
-      } else {
-        setMessage({ type: 'error', text: res.message || 'File upload failed.' });
+        loadHistory(); // Refresh history
       }
     } catch (err) {
-      setMessage({
-        type: 'error',
-        text: err.response?.data?.message || 'Server error while processing CSV file.'
-      });
+      alert("Upload failed");
     } finally {
       setUploading(false);
     }
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black text-white tracking-tight">
-          Dojo Evaluations Upload & Ingestion
+        <h1 className="text-3xl font-black text-white">
+          Upload Dojo Evaluations
         </h1>
-        <p className="text-sm text-slate-400">
-          Upload test slot CSV files to clean with Python Pandas and update student belt progressions
+        <p className="text-slate-400">
+          Upload weekly CSV files and view upload history
         </p>
       </div>
 
-      {/* Upload Action Card */}
-      <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm">
-        <div className="flex items-center gap-2 mb-4">
-          <UploadCloud className="w-5 h-5 text-rose-500" />
-          <h2 className="text-lg font-bold text-white">Upload New Evaluations CSV</h2>
-        </div>
+      {/* Upload Card */}
+      <div className="bg-[#0F172A] border border-red-500/20 rounded-3xl p-8">
+        <div className="border-2 border-dashed border-red-500/30 rounded-2xl p-10 text-center">
+          <UploadCloud className="mx-auto text-red-400" size={55} />
 
-        <div className="mb-6 p-4 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-400 space-y-1.5">
-          <span className="font-semibold text-white block">Expected CSV Format (Kalvium Dojo Structure):</span>
-          <code className="text-rose-400 block font-mono bg-slate-900 p-2 rounded border border-slate-800">
-            id, workout_slug, belt_level, verified_belt_level, workout_updated_at, email
-          </code>
-          <p className="text-slate-400">
-            Supports CSV, XLS, and XLSX files across <span className="text-slate-200">python, nodejs, java, and cpp</span>. Same-day multiple attempts automatically group into daily progression.
+          <h2 className="text-2xl font-bold text-white mt-4">
+            Drag & Drop CSV File
+          </h2>
+
+          <p className="text-slate-400 mt-2">
+            Upload the weekly Dojo evaluation CSV
           </p>
-        </div>
 
-        {message && (
-          <div
-            className={`p-4 rounded-xl mb-6 text-sm flex items-center gap-3 ${
-              message.type === 'success'
-                ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
-                : 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
-            }`}
-          >
-            {message.type === 'success' ? (
-              <CheckCircle2 className="w-5 h-5 shrink-0" />
-            ) : (
-              <AlertTriangle className="w-5 h-5 shrink-0" />
-            )}
-            <span>{message.text}</span>
-          </div>
-        )}
-
-        {/* Latest Cleaning Results Banner */}
-        {latestSummary && (
-          <div className="p-5 rounded-xl bg-slate-950/80 border border-emerald-500/30 mb-6 space-y-3">
-            <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
-              <Sparkles className="w-4 h-4" />
-              Pandas Belt Cleaner Results
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
-              <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Students</span>
-                <p className="text-xl font-extrabold text-white">{latestSummary.totalStudents || 0}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Slots Evaluated</span>
-                <p className="text-xl font-extrabold text-white">{latestSummary.totalSlotsEvaluated || 0}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Improved</span>
-                <p className="text-xl font-extrabold text-emerald-400">{latestSummary.improved || 0}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Not Improved</span>
-                <p className="text-xl font-extrabold text-amber-400">{latestSummary.notImproved || 0}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Belts Earned</span>
-                <p className="text-xl font-extrabold text-rose-400">+{latestSummary.totalBeltsEarned || 0}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <form onSubmit={handleUpload} className="space-y-6">
-          <label className="block max-w-xs">
-            <span className="block mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-300">Test round number</span>
+          <label className="inline-block mt-6 bg-[#E63946] hover:bg-red-600 text-white px-6 py-3 rounded-xl cursor-pointer font-semibold">
+            Choose CSV
             <input
-              type="number"
-              min="1"
-              value={slotNumber}
-              onChange={(event) => setSlotNumber(Math.max(1, Number(event.target.value) || 1))}
-              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/40"
+              hidden
+              type="file"
+              accept=".csv"
+              onChange={(e) => setFile(e.target.files[0])}
             />
           </label>
 
-          {/* File Drag and Drop Zone */}
-          <div className="relative border-2 border-dashed border-slate-700 hover:border-rose-500/50 rounded-2xl p-8 text-center bg-slate-950/40 transition-colors">
-            <input
-              type="file"
-              accept=".csv,.xlsx,.xls"
-              onChange={handleFileChange}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <div className="flex flex-col items-center justify-center gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center text-rose-400 shadow-md">
-                <FileSpreadsheet className="w-7 h-7" />
+          {file && (
+            <div className="mt-6 bg-slate-800 rounded-xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FileText className="text-red-400" />
+                <div className="text-left">
+                  <p className="text-white font-medium">{file.name}</p>
+                  <p className="text-slate-400 text-xs">
+                    {(file.size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-white">
-                  {file ? file.name : 'Click or drag Dojo evaluation CSV here'}
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Supports CSV, XLS, and XLSX evaluation sheets (Max: 25MB)
-                </p>
-              </div>
-              {file && (
-                <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                  Ready to process: {(file.size / 1024).toFixed(1)} KB
-                </span>
-              )}
+
+              <CheckCircle2 className="text-emerald-400" />
             </div>
-          </div>
+          )}
 
           <button
-            type="submit"
-            disabled={uploading || !file}
-            className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-bold text-sm shadow-lg shadow-rose-500/25 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+            onClick={handleUpload}
+            disabled={uploading}
+            className="mt-6 w-full bg-[#E63946] hover:bg-red-600 disabled:opacity-50 text-white py-3 rounded-xl font-bold"
           >
-            <UploadCloud className="w-4 h-4" />
-            {uploading ? 'Processing with Python Pandas...' : 'Upload & Clean Evaluations CSV'}
+            {uploading ? "Uploading..." : "Upload & Process CSV"}
           </button>
-        </form>
+        </div>
       </div>
 
-      {/* Previous Upload History Table */}
-      <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <History className="w-5 h-5 text-rose-400" />
-            <h3 className="text-base font-bold text-white">Upload History Logs</h3>
-          </div>
-          <span className="text-xs text-slate-400">
-            Recorded audit logs of file uploads
-          </span>
+      {/* Upload History */}
+      <div className="bg-[#0F172A] border border-slate-800 rounded-3xl overflow-hidden">
+        <div className="p-6 border-b border-slate-800">
+          <h2 className="text-xl font-bold text-white">
+            Upload History
+          </h2>
+          <p className="text-slate-400 text-sm mt-1">
+            Previously uploaded evaluation files
+          </p>
         </div>
 
-        <div className="overflow-x-auto">
-          {loadingHistory ? (
-            <div className="p-8 text-center text-slate-400 text-sm">
-              Loading upload history...
-            </div>
-          ) : history.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-sm">
-              No files uploaded yet.
-            </div>
-          ) : (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-950/60 text-slate-400 uppercase text-[11px] font-bold tracking-wider border-b border-slate-800">
-                <tr>
-                  <th className="px-5 py-3.5">Filename</th>
-                  <th className="px-5 py-3.5">Uploaded By</th>
-                  <th className="px-5 py-3.5">Date & Time</th>
-                  <th className="px-5 py-3.5">Rows / Slots</th>
-                  <th className="px-5 py-3.5">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {history.map((item, idx) => (
-                  <tr key={item._id || idx} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2.5">
-                        <FileSpreadsheet className="w-4 h-4 text-rose-400 shrink-0" />
-                        <span className="font-semibold text-white truncate max-w-xs" title={item.originalName || item.filename}>
-                          {item.originalName || item.filename}
-                        </span>
-                      </div>
-                    </td>
+        <table className="w-full">
+          <thead className="bg-[#07142D]">
+            <tr className="text-slate-300 text-left">
+              <th className="p-4">File</th>
+              <th className="p-4">Date</th>
+              <th className="p-4">Records</th>
+              <th className="p-4">Status</th>
+            </tr>
+          </thead>
 
-                    <td className="px-5 py-4 text-xs text-slate-300">
-                      {item.uploadedBy?.name || 'Aravind'}
-                    </td>
-
-                    <td className="px-5 py-4 text-xs text-slate-400 flex items-center gap-1.5 pt-5">
-                      <Clock className="w-3.5 h-3.5 text-slate-500" />
-                      {new Date(item.createdAt || item.uploadedAt || Date.now()).toLocaleString()}
-                    </td>
-
-                    <td className="px-5 py-4 font-mono text-xs text-white">
-                      {item.rowsProcessed || item.summary?.totalStudents || 0} slots
-                    </td>
-
-                    <td className="px-5 py-4">
-                      <span
-                        className={`text-xs font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 ${
-                          item.status === 'COMPLETED'
-                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                            : item.status === 'FAILED'
-                            ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                        }`}
-                      >
-                        {item.status === 'COMPLETED' && <CheckCircle2 className="w-3 h-3" />}
-                        {item.status}
+          <tbody>
+            {history.length === 0 ? (
+              <tr>
+                <td colSpan="4" className="text-center py-8 text-slate-400">
+                  No CSV uploaded yet
+                </td>
+              </tr>
+            ) : (
+              history.map((item) => (
+                <tr
+                  key={item.id}
+                  className="border-t border-slate-800 hover:bg-slate-800/40"
+                >
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <FileText className="text-red-400" size={18} />
+                      <span className="text-white font-medium">
+                        {item.fileName}
                       </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                    </div>
+                  </td>
+
+                  <td className="p-4 text-slate-300">
+                    {item.uploadedAt}
+                  </td>
+
+                  <td className="p-4 text-white">
+                    {item.records}
+                  </td>
+
+                  <td className="p-4">
+                    {item.status === "Success" ? (
+                      <span className="bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-fit">
+                        <CheckCircle2 size={12} />
+                        Success
+                      </span>
+                    ) : (
+                      <span className="bg-amber-500/10 text-amber-400 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-fit">
+                        <Clock size={12} />
+                        Pending
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
-};
-
-export default DataUpload;
+}
