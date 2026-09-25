@@ -1,25 +1,23 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import Navbar from './Navbar';
-import Sidebar from './Sidebar';
+import { Outlet } from "react-router-dom";
+import Navbar from "./Navbar";
+import Sidebar from "./Sidebar";
 
-const Layout = () => {
+export default function Layout() {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
-      {/* Top Navbar with profile pinned permanently on right */}
+    <div className="min-h-screen bg-[#020817]">
       <Navbar />
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Main Sidebar with navigation actions */}
-        <Sidebar />
+      <div className="flex">
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block">
+          <Sidebar />
+        </div>
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6">
+        {/* Main Content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
           <Outlet />
         </main>
       </div>
     </div>
   );
-};
-
-export default Layout;
+}

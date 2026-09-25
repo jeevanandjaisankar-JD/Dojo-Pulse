@@ -1,43 +1,67 @@
-import React from 'react';
+import React from "react";
 
-const StatCard = ({ title, value, subtext, icon: Icon, trend, color = 'rose' }) => {
-  const colorStyles = {
-    rose: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
-    emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    amber: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    blue: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-    purple: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
-  };
+const colors = {
+  blue: {
+    icon: "bg-[#2563EB]/10 text-[#60A5FA]",
+    badge: "bg-[#2563EB]/10 text-[#93C5FD]",
+  },
+  emerald: {
+    icon: "bg-[#10B981]/10 text-[#34D399]",
+    badge: "bg-[#10B981]/10 text-[#6EE7B7]",
+  },
+  amber: {
+    icon: "bg-[#F59E0B]/10 text-[#FBBF24]",
+    badge: "bg-[#F59E0B]/10 text-[#FCD34D]",
+  },
+  rose: {
+    icon: "bg-[#E63946]/10 text-[#F87171]",
+    badge: "bg-[#E63946]/10 text-[#FCA5A5]",
+  },
+  purple: {
+    icon: "bg-[#7C3AED]/10 text-[#A78BFA]",
+    badge: "bg-[#7C3AED]/10 text-[#C4B5FD]",
+  },
+};
+
+const StatCard = ({
+  title,
+  value,
+  subtext,
+  icon: Icon,
+  color = "blue",
+  trend,
+}) => {
+  const theme = colors[color];
 
   return (
-    <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700/80 transition-all shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          {title}
-        </span>
-        {Icon && (
-          <div className={`p-2 rounded-xl border ${colorStyles[color] || colorStyles.rose}`}>
-            <Icon className="w-5 h-5" />
-          </div>
-        )}
+    <div className="bg-[#0F172A] border border-slate-800 rounded-2xl p-5 hover:border-[#E63946]/40 transition-all duration-300 hover:shadow-xl">
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
+            {title}
+          </p>
+
+          <h2 className="text-3xl font-black text-white mt-3">
+            {value}
+          </h2>
+        </div>
+
+        <div className={`p-3 rounded-xl ${theme.icon}`}>
+          <Icon size={22} />
+        </div>
       </div>
 
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-extrabold text-white tracking-tight">{value}</span>
+      <div className="space-y-2">
         {trend && (
           <span
-            className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-              trend.startsWith('+') || trend.includes('up')
-                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-            }`}
+            className={`text-xs px-2 py-1 rounded-full font-semibold ${theme.badge}`}
           >
             {trend}
           </span>
         )}
-      </div>
 
-      {subtext && <p className="text-xs text-slate-400 mt-2">{subtext}</p>}
+        <p className="text-xs text-slate-400">{subtext}</p>
+      </div>
     </div>
   );
 };
