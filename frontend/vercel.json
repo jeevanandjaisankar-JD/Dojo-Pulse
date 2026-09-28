@@ -3,7 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://dojo-pulse.onrender.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
-
