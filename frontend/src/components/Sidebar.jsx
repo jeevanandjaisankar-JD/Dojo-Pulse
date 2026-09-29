@@ -1,56 +1,63 @@
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { LayoutDashboard, Users, TrendingUp, Upload, User } from 'lucide-react';
 
-import {
-  LayoutDashboard,
-  Users,
-  TrendingUp,
-  Upload,
-  User
-} from "lucide-react";
-import { NavLink } from "react-router-dom";
-
-const menu = [
-  { name: "Dashboard", icon: LayoutDashboard, path: "/" },
-  { name: "Students", icon: Users, path: "/students" },
-  { name: "Improvements", icon: TrendingUp, path: "/improvements" },
-  { name: "Upload", icon: Upload, path: "/upload" },
-  { name: "Profile", icon: User, path: "/profile" },
+const items = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/students', label: 'Students', icon: Users },
+  { to: '/improvements', label: 'Improvements', icon: TrendingUp },
+  { to: '/upload', label: 'Upload', icon: Upload },
+  { to: '/profile', label: 'Profile', icon: User },
 ];
 
 export default function Sidebar() {
   return (
-    <aside className="w-64 min-h-screen bg-[#07142D] border-r border-red-500/10 p-4">
-      <p className="text-slate-500 text-xs mb-4 uppercase tracking-wider">
-        Main Navigation
-      </p>
+    <>
+      {/* Tablet + desktop: icon rail */}
+      <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-20 shrink-0 flex-col items-center border-r border-[#E6EBF2] bg-white py-5 md:flex">
+        <nav className="flex flex-col gap-2" aria-label="Main">
+          {items.map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              aria-label={label}
+              className={({ isActive }) =>
+                `group relative flex h-12 w-12 items-center justify-center rounded-2xl transition-colors duration-200 ${
+                  isActive ? 'bg-[#FDECEE] text-[#E63946]' : 'text-[#64748B] hover:bg-[#F4F7FB] hover:text-[#0F172A]'
+                }`
+              }
+            >
+              <Icon size={22} />
+              <span className="pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap rounded-lg bg-[#0F172A] px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+                {label}
+              </span>
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
 
-      <nav className="space-y-2">
-        {menu.map((item) => (
+      {/* Mobile: bottom bar */}
+      <nav
+        aria-label="Main"
+        className="fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-[#E6EBF2] bg-white/95 px-2 py-2 backdrop-blur md:hidden"
+      >
+        {items.map(({ to, label, icon: Icon, end }) => (
           <NavLink
-            key={item.name}
-            to={item.path}
+            key={to}
+            to={to}
+            end={end}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                isActive
-                  ? "bg-[#E63946] text-white"
-                  : "text-slate-300 hover:bg-slate-800"
+              `flex flex-1 flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[11px] font-semibold transition-colors ${
+                isActive ? 'bg-[#FDECEE] text-[#E63946]' : 'text-[#64748B]'
               }`
             }
           >
-            <item.icon size={20} />
-            {item.name}
+            <Icon size={20} />
+            {label}
           </NavLink>
         ))}
       </nav>
-
-      <div className="mt-8 p-4 rounded-xl bg-[#0F172A] border border-red-500/20">
-        <h3 className="text-white font-semibold text-sm">
-          DOJO BELT SYSTEM
-        </h3>
-
-        <p className="text-slate-400 text-xs mt-2">
-          Track JavaScript, Python, Java & C++ progress.
-        </p>
-      </div>
-    </aside>
+    </>
   );
 }
