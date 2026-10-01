@@ -52,3 +52,4 @@ export default function BeltChart({ data = [], loading = false, title = 'Belt di
     </div>
   );
 }
+/**end of BeltChart */
