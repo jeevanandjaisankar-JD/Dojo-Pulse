@@ -1,56 +1,21 @@
+import { Outlet } from "react-router-dom";
+import Navbar from "./Navbar";
+import Sidebar from "./Sidebar";
 
-import {
-  LayoutDashboard,
-  Users,
-  TrendingUp,
-  Upload,
-  User
-} from "lucide-react";
-import { NavLink } from "react-router-dom";
-
-const menu = [
-  { name: "Dashboard", icon: LayoutDashboard, path: "/" },
-  { name: "Students", icon: Users, path: "/students" },
-  { name: "Improvements", icon: TrendingUp, path: "/improvements" },
-  { name: "Upload", icon: Upload, path: "/upload" },
-  { name: "Profile", icon: User, path: "/profile" },
-];
-
-export default function Sidebar() {
+export default function Layout() {
   return (
-    <aside className="w-64 min-h-screen bg-[#07142D] border-r border-red-500/10 p-4">
-      <p className="text-slate-500 text-xs mb-4 uppercase tracking-wider">
-        Main Navigation
-      </p>
+    <div className="min-h-screen bg-[#F7F9FC]">
+      <Navbar />
 
-      <nav className="space-y-2">
-        {menu.map((item) => (
-          <NavLink
-            key={item.name}
-            to={item.path}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                isActive
-                  ? "bg-[#E63946] text-white"
-                  : "text-slate-300 hover:bg-slate-800"
-              }`
-            }
-          >
-            <item.icon size={20} />
-            {item.name}
-          </NavLink>
-        ))}
-      </nav>
+      <div className="flex">
+        {/* Sidebar handles its own desktop/mobile responsive layout */}
+        <Sidebar />
 
-      <div className="mt-8 p-4 rounded-xl bg-[#0F172A] border border-red-500/20">
-        <h3 className="text-white font-semibold text-sm">
-          DOJO BELT SYSTEM
-        </h3>
-
-        <p className="text-slate-400 text-xs mt-2">
-          Track JavaScript, Python, Java & C++ progress.
-        </p>
+        {/* Main Content */}
+        <main className="flex-1 min-w-0 overflow-auto p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8">
+          <Outlet />
+        </main>
       </div>
-    </aside>
+    </div>
   );
 }
