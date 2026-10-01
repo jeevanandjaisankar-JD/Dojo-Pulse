@@ -137,3 +137,49 @@ const getUploadHistory = async (req, res) => {
 };
 
 module.exports = { uploadDojoFile, getUploadHistory };
+
+/** Delete one upload-history entry and its stored raw file. */
+const deleteUploadHistory = async (req, res) => {
+  try {
+    if (!databaseReady()) {
+      return res.status(503).json({
+        success: false,
+        message: 'MongoDB is unavailable. Upload history cannot be deleted.'
+      });
+    }
+
+    const historyEntry = await UploadHistory.findById(req.params.id);
+
+    if (!historyEntry) {
+      return res.status(404).json({
+        success: false,
+        message: 'Upload history entry not found.'
+      });
+    }
+
+    // Delete the database history record.
+    await UploadHistory.deleteOne({ _id: historyEntry._id });
+
+    // Delete the stored raw CSV file.
+    // If the file is already missing, deletion should still succeed.
+    if (historyEntry.filePath) {
+      await fs.unlink(historyEntry.filePath).catch(() => undefined);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Upload history entry deleted successfully.'
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to delete upload history: ${error.message}`
+    });
+  }
+};
+
+module.exports = {
+  uploadDojoFile,
+  getUploadHistory,
+  deleteUploadHistory
+};
