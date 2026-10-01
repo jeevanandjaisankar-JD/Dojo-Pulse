@@ -1,6 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCircle2, FileSpreadsheet, Loader2, UploadCloud, X } from 'lucide-react';
-import { getUploadHistory, uploadDojoFile } from '../services/api';
+import {
+  CheckCircle2,
+  FileSpreadsheet,
+  Loader2,
+  Trash2,
+  UploadCloud,
+  X
+} from 'lucide-react';
+
+import {
+  deleteUploadHistory,
+  getUploadHistory,
+  uploadDojoFile
+} from '../services/api';
+
 import { toList, fmtDate, fmtVal } from '../components/StatCard';
 
 export default function DataUpload() {
@@ -11,6 +24,7 @@ export default function DataUpload() {
   const [message, setMessage] = useState(null);
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
   const loadHistory = useCallback(async () => {
     try {
@@ -58,7 +72,43 @@ export default function DataUpload() {
       setUploading(false);
     }
   };
+const handleDeleteHistory = async (historyId, fileName) => {
+  if (!historyId) return;
 
+  const confirmed = window.confirm(
+    `Delete "${fileName}" from upload history?\n\nThis will permanently remove the upload history entry and the stored CSV file. Student data already processed from this upload will not be deleted.\n\nThis action cannot be undone.`
+  );
+
+  if (!confirmed) return;
+
+  setDeletingId(historyId);
+  setMessage(null);
+
+  try {
+    await deleteUploadHistory(historyId);
+
+    setHistory((current) =>
+      current.filter((item) => {
+        const id = item.id ?? item._id;
+        return String(id) !== String(historyId);
+      })
+    );
+
+    setMessage({
+      type: 'success',
+      text: `${fileName} was deleted from upload history.`
+    });
+  } catch (err) {
+    setMessage({
+      type: 'error',
+      text:
+        err?.response?.data?.message ??
+        'Failed to delete the upload history entry.'
+    });
+  } finally {
+    setDeletingId(null);
+  }
+};
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 pb-28 sm:p-6 md:pb-8 lg:p-8">
       <div>
@@ -120,11 +170,12 @@ export default function DataUpload() {
                 <th className="px-6 py-3 font-semibold">Uploaded</th>
                 <th className="px-6 py-3 font-semibold">Records</th>
                 <th className="px-6 py-3 font-semibold">Status</th>
+                <th className="px-6 py-3 text-right font-semibold">Action</th>
               </tr>
             </thead>
             <tbody>
               {loadingHistory && [0, 1, 2].map((i) => (
-                <tr key={i}><td colSpan={4} className="px-6 py-3"><div className="skeleton h-6 w-full" /></td></tr>
+                <tr key={i}><td colSpan={5} className="px-6 py-3"><div className="skeleton h-6 w-full" /></td></tr>
               ))}
               {!loadingHistory && history.map((h, i) => {
                 const records = h.records ?? h.rows ?? h.row_count ?? h.rowCount ?? h.records_processed;
@@ -134,6 +185,32 @@ export default function DataUpload() {
                     <td className="px-6 py-3 text-[#64748B]">{fmtDate(h.uploaded_at ?? h.uploadedAt ?? h.created_at ?? h.createdAt ?? h.date)}</td>
                     <td className="px-6 py-3 text-[#64748B]">{records == null ? '—' : fmtVal(records)}</td>
                     <td className="px-6 py-3">
+                    <td className="px-6 py-3 text-right">
+  <button
+    type="button"
+    onClick={() =>
+      handleDeleteHistory(
+        h.id ?? h._id,
+        h.filename ?? h.file_name ?? h.fileName ?? h.name ?? 'this file'
+      )
+    }
+    disabled={deletingId === (h.id ?? h._id)}
+    className="inline-flex items-center gap-1.5 rounded-lg border border-[#FECACA] bg-white px-3 py-1.5 text-xs font-semibold text-[#B91C1C] transition-colors hover:bg-[#FDECEE] disabled:cursor-not-allowed disabled:opacity-50"
+    aria-label={`Delete ${h.filename ?? h.file_name ?? h.fileName ?? h.name ?? 'upload'}`}
+  >
+    {deletingId === (h.id ?? h._id) ? (
+      <>
+        <Loader2 size={14} className="animate-spin" />
+        Deleting
+      </>
+    ) : (
+      <>
+        <Trash2 size={14} />
+        Delete
+      </>
+    )}
+  </button>
+</td>  
                       {h.status ? (
                         <span className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${
                           /fail|error/i.test(h.status) ? 'bg-[#FDECEE] text-[#B91C1C]' : 'bg-[#E3F7EF] text-[#047857]'

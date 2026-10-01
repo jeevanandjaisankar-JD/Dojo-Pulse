@@ -68,5 +68,10 @@ export const getUploadHistory = async () => {
   return res.data;
 };
 
+export const deleteUploadHistory = async (id) => {
+  const res = await api.delete(`/uploads/history/${id}`);
+  return res.data;
+};
+
 export default api;
 // end of api
