@@ -4,7 +4,6 @@ import {
   FileSpreadsheet,
   Loader2,
   Trash2,
-  UploadCloud,
   X
 } from 'lucide-react';
 
@@ -15,6 +14,7 @@ import {
 } from '../services/api';
 
 import { toList, fmtDate, fmtVal } from '../components/StatCard';
+import dojoUploadLogo from '../assets/dojo-upload-logo.svg';
 
 export default function DataUpload() {
   const inputRef = useRef(null);
@@ -184,8 +184,12 @@ export default function DataUpload() {
           onChange={(e) => pick(e.target.files?.[0])}
         />
 
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF2FF] text-[#2563EB]">
-          <UploadCloud size={28} />
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF2FF]">
+          <img
+          src={dojoUploadLogo}
+          alt="Upload"
+          className="h-10 w-10 object-contain"
+          />
         </span>
 
         <p className="text-lg font-bold">

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, LogIn, Sparkles, KeyRound } from 'lucide-react';
+import { ShieldCheck, LogIn, Sparkles, KeyRound, Eye,
+EyeOff, } from 'lucide-react';
+import kalviumLogo from '../assets/kalvium-logo.svg';
 
 const Login = () => {
   const { login, isAuthenticated } = useAuth();
@@ -11,7 +13,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
+  const [showPassword, setShowPassword] = useState(false);
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/');
@@ -59,11 +61,16 @@ const Login = () => {
           </div>
 
           <h1 className="text-3xl font-extrabold text-[#0F172A] tracking-tight">
-            DOJO<span className="text-[#E63946]">PULSE</span>
+            <img
+            src={kalviumLogo}
+            alt="Kalvium"
+            className="h-10 w-auto object-contain inline-block mr-2"
+            />
+            Login
           </h1>
 
           <p className="text-sm text-[#64748B] mt-1">
-            Restricted Portal — Authorized Mentor Portal
+            Restricted Portal — Authorized Kalvium Portal
           </p>
         </div>
 
@@ -81,14 +88,14 @@ const Login = () => {
             {/* Username */}
             <div>
               <label className="block text-xs font-semibold text-[#475569] uppercase tracking-wider mb-1.5">
-                Mentor Username / Email
+                Kalvium Mentor Username / Email
               </label>
 
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="mentor1"
+                placeholder="Username or Email"
                 required
                 className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#D8E0EA] text-[#0F172A] placeholder-[#94A3B8] text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
               />
@@ -100,14 +107,23 @@ const Login = () => {
                 Password
               </label>
 
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#D8E0EA] text-[#0F172A] placeholder-[#94A3B8] text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="password"
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#D8E0EA] text-[#0F172A] placeholder-[#94A3B8] text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A]"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
 
             {/* Login Button */}
@@ -117,7 +133,7 @@ const Login = () => {
               className="w-full mt-2 py-3 px-4 rounded-xl bg-[#E63946] hover:bg-[#D92F3D] text-white font-semibold text-sm shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
             >
               <LogIn className="w-4 h-4" />
-              {loading ? 'Authenticating Mentor...' : 'Sign In as Mentor'}
+              {loading ? 'Authenticating Mentor...' : 'Sign In'}
             </button>
           </form>
 
@@ -130,9 +146,7 @@ const Login = () => {
             </p>
 
             <p className="rounded-xl border border-red-100 bg-red-50 p-3 text-xs leading-relaxed text-[#475569]">
-              Only the seven allowlisted mentor accounts can enter.
-              Temporary account details live in the backend mentor
-              configuration and must be replaced before deployment.
+              Only the users from kalvium environment can access this portal.
             </p>
           </div>
         </div>
@@ -140,7 +154,7 @@ const Login = () => {
         {/* Security note */}
         <div className="flex items-center justify-center gap-2 mt-5 text-xs text-[#94A3B8]">
           <ShieldCheck className="w-4 h-4" />
-          Secure mentor access
+          Secure access
         </div>
 
       </div>
