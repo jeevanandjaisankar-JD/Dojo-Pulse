@@ -1,112 +1,227 @@
-# ⛩️ Dojo-Pulse
+# Dojo-Pulse
 
-### Full-Stack Belt Analytics & Student Progress Tracking Platform
+> **Kalvium Dojo Mentor Progress Tracking & Analytics Platform**
 
-Dojo-Pulse is a full-stack web application designed for **Kalvium Dojo mentors** to monitor student progress, analyze belt advancement, track improvement, and manage Dojo assessment data through a centralized dashboard.
+Dojo-Pulse is a full-stack web application designed to help mentors monitor, analyze, and manage student progress in the Kalvium Dojo evaluation system.
 
-The platform combines a React-based mentor portal, an Express/Node.js API, MongoDB persistence, and a Python/Pandas data-processing pipeline.
-
----
-
-## 📌 Overview
-
-Dojo-Pulse helps mentors transform raw Dojo assessment data into meaningful progress information.
-
-### Core capabilities
-
-* 🔐 Restricted mentor authentication
-* 📊 Mentor dashboard with cohort statistics
-* 👨‍🎓 Student search and progress tracking
-* ⛩️ Belt progression analytics
-* 📈 Improvement and performance analytics
-* 📁 CSV/Excel Dojo data upload
-* 🐍 Python/Pandas data cleaning pipeline
-* 🗂️ Upload history and processing status
-* 👤 Mentor profile
-* 📱 Responsive desktop and mobile interface
-* 🔑 JWT-based protected API access
+The platform provides a centralized mentor portal for viewing student performance, tracking belt progression, analyzing improvement patterns, and uploading Dojo evaluation data.
 
 ---
 
-# 🏗️ Architecture
+## 📌 Project Overview
 
-Dojo-Pulse follows a three-tier architecture:
+Dojo-Pulse brings student Dojo performance data into a single mentor-focused dashboard.
 
-```text
-                         ┌──────────────────────┐
-                         │      Mentor User     │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │   React Frontend     │
-                         │   Vite + Tailwind    │
-                         └──────────┬───────────┘
-                                    │
-                              REST API / JWT
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │  Node.js + Express   │
-                         │      Backend API     │
-                         └───────┬───────┬──────┘
-                                 │       │
-                       MongoDB   │       │ Python Pipeline
-                                 │       │
-                                 ▼       ▼
-                       ┌────────────┐  ┌─────────────────┐
-                       │  MongoDB   │  │ Python + Pandas │
-                       │  Database  │  │ Data Processor  │
-                       └────────────┘  └─────────────────┘
-```
+Instead of manually reviewing large amounts of evaluation data, mentors can use the platform to:
+
+* Monitor overall student progress
+* View individual student performance
+* Track belt progression
+* Analyze improvement trends
+* Identify students requiring attention
+* Upload Dojo evaluation data through CSV files
+* Review previous uploads
+* Delete upload history and stored source files when required
+* Access the platform through authenticated mentor accounts
+
+The project is built as a full-stack application with a React frontend, Node.js/Express backend, MongoDB database, and cloud deployment.
 
 ---
 
-# 📂 Project Structure
+## 🎯 Core Objectives
+
+* Provide mentors with a centralized student progress dashboard.
+* Make Dojo evaluation data easier to understand and analyze.
+* Track belt progression and improvement over time.
+* Reduce manual data-processing effort.
+* Provide secure mentor-only access.
+* Maintain a structured upload history.
+* Establish a development → staging → production workflow for the team.
+
+---
+
+## ✨ Features
+
+### 🔐 Mentor Authentication
+
+* Mentor-only login system.
+* Username or email based authentication.
+* JWT-based session authentication.
+* Protected application routes.
+* Centralized authentication service.
+* Automatic authentication token handling for API requests.
+* Session verification when the application starts.
+* Dedicated logout functionality.
+* Redirect unauthenticated users to the login page.
+* Password visibility Show/Hide option on the login page.
+
+### 📊 Dashboard
+
+The dashboard provides an overview of student progress and Dojo performance.
+
+It includes:
+
+* Total student count
+* Belt-related statistics
+* Improvement statistics
+* Progress analytics
+* Performance summaries
+* Visual data representation
+
+### 👨‍🎓 Student Management
+
+Mentors can:
+
+* View the student roster.
+* Search and inspect student information.
+* Open individual student profiles.
+* Review belt progression.
+* View attempts and evaluation history.
+* Review languages attempted.
+* Track improvement status.
+
+### 📈 Student Analytics
+
+The application tracks:
+
+* Verified belts
+* Current belt level
+* Total belts earned
+* Slots attempted
+* Improvement status
+* Languages attempted
+* Same-day progress
+* Individual slot attempts
+* Belt progression over time
+
+### 📉 Improvements Analytics
+
+The Improvements section provides mentor-oriented analysis of student improvement patterns.
+
+It helps mentors identify:
+
+* Students who improved
+* Students with no improvement
+* Improvement rates
+* Belt progression patterns
+* Language-related performance data
+
+### 📤 Dojo Data Upload
+
+Mentors can upload Dojo evaluation data through the Data Upload page.
+
+Current frontend upload flow:
+
+* CSV file selection
+* Drag-and-drop upload
+* File validation
+* Upload progress state
+* Success/error feedback
+* Upload history
+* Record count information
+* Upload status tracking
+
+The backend upload middleware currently supports CSV and Excel file extensions, while the current frontend upload interface is configured for `.csv` files.
+
+### 🗂️ Upload History
+
+Every processed upload can be displayed in the upload history section.
+
+The history contains information such as:
+
+* File name
+* Upload date
+* Number of processed records
+* Processing status
+* Upload action controls
+
+### 🗑️ Upload History Deletion
+
+Upload history entries can be deleted individually.
+
+The deletion workflow:
+
+1. Mentor clicks **Delete**.
+2. A confirmation warning is displayed.
+3. The stored upload history record is deleted.
+4. The associated stored source file is deleted.
+5. The deleted row is immediately removed from the UI.
+6. Success/error feedback is displayed.
+7. A per-row loading state prevents duplicate deletion requests.
+
+> **Important:** Deleting an upload history entry does **not** delete the already-processed student records.
+
+### 👤 Mentor Profile
+
+The Profile page provides mentor information and includes:
+
+* Mentor details
+* Mentor role information
+* Profile information returned by the backend
+* Logout functionality
+
+### 🎨 Frontend Branding
+
+The frontend includes dedicated project branding assets:
+
+* Kalvium logo
+* Dojo upload/dropzone logo
+
+The Kalvium logo is used in the main navigation and login experience, while the Dojo upload logo is used in the data-upload interface.
+
+---
+
+## 🏗️ Technology Stack
+
+### Frontend
+
+* React
+* Vite
+* React Router
+* Tailwind CSS
+* Axios
+* Lucide React
+
+### Backend
+
+* Node.js
+* Express.js
+* JWT
+* Multer
+
+### Database
+
+* MongoDB
+* Mongoose
+
+### Data Processing
+
+* Python
+* Pandas
+
+### Deployment
+
+* Vercel — Frontend
+* Render — Backend
+* MongoDB — Database
+
+---
+
+## 📁 Project Structure
 
 ```text
 Dojo-Pulse/
 │
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Layout.jsx
-│   │   │   ├── Navbar.jsx
-│   │   │   ├── Sidebar.jsx
-│   │   │   ├── ProtectedRoute.jsx
-│   │   │   ├── StatCard.jsx
-│   │   │   └── BeltChart.jsx
-│   │   │
-│   │   ├── context/
-│   │   │   └── AuthContext.jsx
-│   │   │
-│   │   ├── pages/
-│   │   │   ├── Login.jsx
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── Students.jsx
-│   │   │   ├── StudentDetail.jsx
-│   │   │   ├── Improvements.jsx
-│   │   │   ├── DataUpload.jsx
-│   │   │   └── Profile.jsx
-│   │   │
-│   │   └── services/
-│   │       └── api.js
-│   │
-│   ├── vite.config.js
-│   ├── tailwind.config.js
-│   └── package.json
-│
 ├── backend/
 │   ├── src/
 │   │   ├── config/
-│   │   │   ├── db.js
 │   │   │   └── mentors.js
 │   │   │
 │   │   ├── controllers/
+│   │   │   ├── analyticsController.js
 │   │   │   ├── authController.js
 │   │   │   ├── dashboardController.js
 │   │   │   ├── studentController.js
-│   │   │   ├── analyticsController.js
 │   │   │   └── uploadController.js
 │   │   │
 │   │   ├── middlewares/
@@ -115,198 +230,145 @@ Dojo-Pulse/
 │   │   │
 │   │   ├── models/
 │   │   │   ├── Student.js
-│   │   │   ├── DojoSlot.js
 │   │   │   └── UploadHistory.js
 │   │   │
 │   │   ├── routes/
+│   │   │   ├── analyticsRoutes.js
 │   │   │   ├── authRoutes.js
 │   │   │   ├── dashboardRoutes.js
 │   │   │   ├── studentRoutes.js
-│   │   │   ├── analyticsRoutes.js
 │   │   │   └── uploadRoutes.js
-│   │   │
-│   │   ├── services/
-│   │   │   ├── analyticsService.js
-│   │   │   └── pythonRunner.js
 │   │   │
 │   │   ├── app.js
 │   │   └── server.js
 │   │
 │   ├── uploads/
-│   └── package.json
+│   ├── package.json
+│   └── ...
 │
 ├── data_processor/
-│   ├── cleaner.py
-│   ├── run_pipeline.py
 │   ├── requirements.txt
-│   └── .venv/
+│   └── ...
+│
+├── frontend/
+│   ├── src/
+│   │   ├── assets/
+│   │   │   ├── kalvium-logo.svg
+│   │   │   └── dojo-upload-logo.svg
+│   │   │
+│   │   ├── components/
+│   │   │   ├── BeltChart.jsx
+│   │   │   ├── Layout.jsx
+│   │   │   ├── MentorBanner.jsx
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── ProtectedRoute.jsx
+│   │   │   ├── Sidebar.jsx
+│   │   │   └── StatCard.jsx
+│   │   │
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx
+│   │   │
+│   │   ├── pages/
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── DataUpload.jsx
+│   │   │   ├── Improvements.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Profile.jsx
+│   │   │   ├── StudentDetail.jsx
+│   │   │   └── Students.jsx
+│   │   │
+│   │   ├── services/
+│   │   │   ├── api.js
+│   │   │   └── authService.js
+│   │   │
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   └── main.jsx
+│   │
+│   ├── tailwind.config.js
+│   ├── vercel.json
+│   ├── vite.config.js
+│   └── package.json
 │
 ├── .gitignore
+├── LICENSE
 ├── package.json
 └── README.md
 ```
 
 ---
 
-# ⚙️ Technology Stack
+## 🔑 Authentication Architecture
 
-| Layer            | Technology    |
-| ---------------- | ------------- |
-| Frontend         | React 18      |
-| Build Tool       | Vite          |
-| Styling          | Tailwind CSS  |
-| Icons            | Lucide React  |
-| HTTP Client      | Axios         |
-| Routing          | React Router  |
-| Backend          | Node.js       |
-| API Framework    | Express.js    |
-| Database         | MongoDB       |
-| ODM              | Mongoose      |
-| Authentication   | JWT           |
-| File Upload      | Multer        |
-| Data Processing  | Python        |
-| Data Analysis    | Pandas        |
-| Frontend Hosting | Vercel        |
-| Backend Hosting  | Render        |
-| Database Hosting | MongoDB Atlas |
+Authentication is separated into dedicated layers.
 
----
+### `authService.js`
 
-# ✨ Features
+The frontend authentication service is responsible for:
 
-## 🔐 Mentor Authentication
+* Reading the stored JWT.
+* Storing the JWT.
+* Checking authentication state.
+* Removing the JWT during logout.
 
-Dojo-Pulse provides restricted access for authorized mentors.
+### `AuthContext.jsx`
 
-Authentication uses:
+The authentication context manages application-level authentication state.
 
-* Username/email login
-* JWT session tokens
-* Protected frontend routes
-* Protected backend API routes
+It handles:
+
+* Current mentor
+* Authentication token
+* Login
+* Logout
 * Session verification
-* Automatic logout for invalid/expired sessions
+* Authentication loading state
 
-The application should never store production credentials inside the frontend or expose secrets through the README.
+### `ProtectedRoute.jsx`
 
----
+Protected routes prevent unauthenticated access to the main application.
 
-## 📊 Dashboard
-
-The dashboard provides an overview of the current Dojo cohort.
-
-### Dashboard metrics include
-
-* Total students
-* Improved students
-* Students who have not improved
-* Improvement rate
-* Total belts earned
-* Slots completed
-* Active programming languages
-* Recent student activity
-* Language-wise progress
-
----
-
-## 👨‍🎓 Student Tracking
-
-Mentors can:
-
-* View students
-* Search students
-* Open individual student details
-* View belt progression
-* View weekly/same-day progress
-* Review language-wise attempts
-* Track improvement status
-
----
-
-## ⛩️ Belt Analytics
-
-Dojo-Pulse tracks belt progression across supported programming languages.
-
-Current base languages include:
+The flow is:
 
 ```text
-Python
-Node.js
-Java
-C++
+User
+ │
+ ▼
+Login
+ │
+ ▼
+Backend Authentication
+ │
+ ├── Failed → Error
+ │
+ └── Success
+       │
+       ▼
+      JWT
+       │
+       ▼
+AuthContext
+       │
+       ▼
+Protected Routes
+       │
+       ▼
+Dojo-Pulse Dashboard
 ```
-
-The analytics layer calculates:
-
-* Belt advancement
-* Attempts
-* Improvement
-* Belts earned
-* Language-wise activity
-* Historical progress
 
 ---
 
-## 📈 Improvement Analytics
+## 🔌 API Structure
 
-The Improvements section provides cohort-level analytics including:
-
-* Improved students
-* Students not improved
-* Improvement percentage
-* Total belts earned
-* Language-wise belt progression
-* Historical progress
-
-Analytics are generated from persisted student records through the backend analytics service.
-
----
-
-## 📁 Data Upload
-
-Mentors can upload Dojo assessment data.
-
-Supported formats:
+The backend exposes the following major API groups:
 
 ```text
-.csv
-.xlsx
-.xls
+/api/auth
+/api/dashboard
+/api/students
+/api/analytics
+/api/uploads
 ```
-
-Maximum upload size:
-
-```text
-25 MB
-```
-
-The processing flow is:
-
-```text
-Upload File
-     ↓
-Multer Validation
-     ↓
-Upload History Record
-     ↓
-Python/Pandas Pipeline
-     ↓
-Data Cleaning
-     ↓
-Student Records Updated
-     ↓
-Analytics Recalculated
-     ↓
-Dashboard Updated
-```
-
-Failed processing attempts are recorded in upload history so that errors can be investigated.
-
----
-
-# 🔌 API Overview
-
-The frontend communicates with the backend through REST APIs.
 
 ### Authentication
 
@@ -319,27 +381,27 @@ GET  /api/auth/roster
 ### Dashboard
 
 ```text
-GET /api/dashboard/stats
+/api/dashboard/*
 ```
 
 ### Students
 
 ```text
-GET /api/students
-GET /api/students/:id
+/api/students/*
 ```
 
 ### Analytics
 
 ```text
-GET /api/analytics/improvements
+/api/analytics/*
 ```
 
 ### Uploads
 
 ```text
-POST /api/uploads
-GET  /api/uploads/history
+POST   /api/uploads
+GET    /api/uploads/history
+DELETE /api/uploads/history/:id
 ```
 
 ### Health Check
@@ -348,486 +410,7 @@ GET  /api/uploads/history
 GET /api/health
 ```
 
-Protected endpoints require:
-
-```text
-Authorization: Bearer <JWT>
-```
-
----
-
-# 🛠️ Local Development
-
-## Prerequisites
-
-Install:
-
-* Node.js 18+
-* npm
-* Python 3.10+
-* MongoDB or MongoDB Atlas
-* Git
-
----
-
-## 1. Clone the Repository
-
-```bash
-git clone https://github.com/jeevanandjaisankar-JD/Dojo-Pulse.git
-cd Dojo-Pulse
-```
-
----
-
-## 2. Install Dependencies
-
-Install root dependencies:
-
-```bash
-npm install
-```
-
-Install backend dependencies:
-
-```bash
-npm install --prefix backend
-```
-
-Install frontend dependencies:
-
-```bash
-npm install --prefix frontend
-```
-
-Install Python dependencies:
-
-```bash
-cd data_processor
-pip install -r requirements.txt
-cd ..
-```
-
----
-
-# 🔑 Environment Variables
-
-Create the required environment files locally.
-
-## Backend
-
-Create:
-
-```text
-backend/.env
-```
-
-Example:
-
-```env
-PORT=5000
-
-MONGO_URI=mongodb://localhost:27017/dojo_pulse
-
-JWT_SECRET=replace-with-a-long-random-secret
-
-CLIENT_ORIGIN=http://localhost:3000
-
-PYTHON_CMD=python
-```
-
-### Important
-
-Never commit:
-
-```text
-.env
-.env.local
-.env.production
-```
-
-to GitHub.
-
-Production secrets must be configured through the hosting provider's environment-variable system.
-
----
-
-# ▶️ Running the Application
-
-## Run frontend and backend together
-
-From the project root:
-
-```bash
-npm run dev
-```
-
-Frontend:
-
-```text
-http://localhost:3000
-```
-
-Backend:
-
-```text
-http://localhost:5000
-```
-
-Backend health check:
-
-```text
-http://localhost:5000/api/health
-```
-
----
-
-## Run Services Individually
-
-### Backend
-
-```bash
-npm run dev:backend
-```
-
-### Frontend
-
-```bash
-npm run dev:frontend
-```
-
----
-
-# 🧪 Testing & Verification
-
-Before promoting changes to production, verify the following.
-
-### Authentication
-
-* [ ] Valid mentor can log in
-* [ ] Invalid credentials are rejected
-* [ ] Protected pages redirect unauthenticated users
-* [ ] Refreshing the page preserves a valid session
-* [ ] Invalid/expired sessions are cleared
-
-### Dashboard
-
-* [ ] Dashboard loads successfully
-* [ ] KPI values are displayed
-* [ ] Language statistics load
-* [ ] Recent activity loads
-* [ ] Empty database state does not crash the application
-
-### Students
-
-* [ ] Student list loads
-* [ ] Student search works
-* [ ] Student detail page loads
-* [ ] Invalid student IDs are handled correctly
-
-### Analytics
-
-* [ ] Improvement analytics load
-* [ ] Belt statistics are displayed
-* [ ] Empty analytics state does not crash the UI
-
-### Upload
-
-* [ ] CSV upload works
-* [ ] XLS/XLSX upload works
-* [ ] Invalid file types are rejected
-* [ ] Files above the size limit are rejected
-* [ ] Pandas processing succeeds
-* [ ] Failed processing is reported correctly
-* [ ] Student records update after successful processing
-* [ ] Upload history is recorded
-
-### Responsive UI
-
-* [ ] Desktop layout works
-* [ ] Tablet layout works
-* [ ] Mobile navigation works
-* [ ] Pages do not overflow horizontally
-* [ ] All routes work after browser refresh
-
----
-
-# 🏗️ Build Verification
-
-Before creating a production release:
-
-```bash
-npm run build:frontend
-```
-
-The frontend must build successfully without errors.
-
-For backend verification:
-
-```bash
-npm run check --prefix backend
-```
-
----
-
-# 🚀 Deployment Architecture
-
-The intended deployment structure is:
-
-```text
-                    GitHub
-                      │
-              ┌───────┴────────┐
-              │                │
-           deploy             main
-          (staging)         (production)
-              │                │
-              ▼                ▼
-          Staging            Production
-          Testing             Release
-```
-
-### Frontend
-
-Hosted through:
-
-```text
-Vercel
-```
-
-### Backend
-
-Hosted through:
-
-```text
-Render
-```
-
-### Database
-
-Hosted through:
-
-```text
-MongoDB Atlas
-```
-
----
-
-# 🌱 Git Branching Strategy
-
-Dojo-Pulse uses a staging-based workflow.
-
-```text
-feature branch
-      │
-      ▼
- Pull Request
-      │
-      ▼
-   deploy
-      │
-      ▼
- Testing / Fixes
-      │
-      ▼
- Pull Request
-      │
-      ▼
-    main
-      │
-      ▼
- Production
-```
-
-## `main`
-
-`main` represents the production version.
-
-Rules:
-
-* No direct feature development
-* No direct pushes
-* Changes enter through an approved PR
-* Production should only contain tested code
-
----
-
-## `deploy`
-
-`deploy` represents the staging/integration environment.
-
-Rules:
-
-* Feature branches target `deploy`
-* PR review is required
-* Integration testing happens here
-* Bugs are fixed before production promotion
-* The branch can be deployed as a staging environment
-
----
-
-## Feature Branches
-
-Use descriptive branch names.
-
-Examples:
-
-```text
-feat/student-search
-feat/dashboard-analytics
-fix/upload-error
-fix/mobile-navigation
-refactor/authentication
-docs/project-readme
-chore/dependency-cleanup
-```
-
----
-
-# 🔀 Pull Request Workflow
-
-Every contributor should follow:
-
-```text
-1. Pull latest deploy
-       ↓
-2. Create feature branch
-       ↓
-3. Implement changes
-       ↓
-4. Test locally
-       ↓
-5. Push branch
-       ↓
-6. Create PR → deploy
-       ↓
-7. Review
-       ↓
-8. Fix review comments
-       ↓
-9. Merge into deploy
-       ↓
-10. Staging testing
-       ↓
-11. PR deploy → main
-       ↓
-12. Production release
-```
-
-Before starting new work:
-
-```bash
-git checkout deploy
-git pull origin deploy
-```
-
----
-
-# 🔒 Security Guidelines
-
-Do not commit:
-
-```text
-.env
-.env.production
-JWT secrets
-MongoDB credentials
-API keys
-Passwords
-Private tokens
-Personal credentials
-```
-
-Production secrets must be stored in the deployment platform's environment variables.
-
-Authentication credentials should not be documented in this README.
-
-For future security improvements, the authentication system should use securely hashed passwords and a persistent user/mentor store rather than plaintext credentials inside source code.
-
----
-
-# 🗄️ Database Strategy
-
-Development, staging, and production should use separate database environments.
-
-Recommended structure:
-
-```text
-Development
-    ↓
-Local MongoDB
-
-Staging
-    ↓
-MongoDB Atlas
-    ↓
-Separate staging database
-
-Production
-    ↓
-MongoDB Atlas
-    ↓
-Separate production database
-```
-
-This prevents staging uploads and testing operations from modifying production student data.
-
----
-
-# 🐍 Data Processing Pipeline
-
-The Python layer is responsible for cleaning and transforming uploaded Dojo data.
-
-```text
-Raw Dojo File
-      ↓
-run_pipeline.py
-      ↓
-cleaner.py
-      ↓
-Normalized Student Data
-      ↓
-Node.js Backend
-      ↓
-MongoDB
-```
-
-The backend invokes the Python pipeline through `pythonRunner.js`.
-
----
-
-# 📈 Analytics Flow
-
-Analytics are generated from persisted student records.
-
-```text
-MongoDB Student Records
-          ↓
-   analyticsService
-          ↓
- ┌────────┴─────────┐
- │                  │
-Dashboard        Improvements
- │                  │
- └────────┬─────────┘
-          ▼
-      Mentor UI
-```
-
-Keeping the analytics calculations centralized helps ensure that the Dashboard and Improvements pages use the same underlying calculations.
-
----
-
-# 🩺 Health Check
-
-The backend provides:
-
-```text
-GET /api/health
-```
-
-A successful response indicates that the API process is running.
-
-Example response:
+Expected response:
 
 ```json
 {
@@ -838,58 +421,499 @@ Example response:
 
 ---
 
-# 📋 Current Project Status
-
-### Phase 1 — Prototype
-
-* [x] Full-stack application structure
-* [x] Mentor authentication
-* [x] Dashboard
-* [x] Student tracking
-* [x] Student detail view
-* [x] Improvement analytics
-* [x] Data upload
-* [x] Python/Pandas processing
-* [x] MongoDB integration
-* [x] Responsive UI
-* [x] GitHub PR workflow
-
-### Phase 2 — Stabilization & Security
-
-* [ ] Dedicated staging deployment
-* [ ] Separate staging database
-* [ ] Production/staging environment separation
-* [ ] Authentication security improvements
-* [ ] Secret management cleanup
-* [ ] Additional validation
-* [ ] UI refinement
-* [ ] Comprehensive staging testing
-* [ ] Production release hardening
-
----
-
-# 👥 Development Team
-
-Dojo-Pulse is developed as a collaborative student software project.
-
-The team follows a pull-request-based development workflow where changes are reviewed and integrated through the staging branch before production.
-
----
-
-# 📄 License
-
-This project is currently maintained as an academic/student software project.
-
-License:
+## 🔄 Upload Processing Flow
 
 ```text
-MIT
+Mentor
+  │
+  ▼
+Select / Drop CSV
+  │
+  ▼
+Frontend Validation
+  │
+  ▼
+POST /api/uploads
+  │
+  ▼
+Multer File Handling
+  │
+  ▼
+Data Processing
+  │
+  ▼
+MongoDB
+  │
+  ├── Student Data
+  │
+  └── Upload History
+  │
+  ▼
+Analytics
+  │
+  ▼
+Dashboard / Student / Improvements
 ```
 
 ---
 
-# ⛩️ Dojo-Pulse
+## 🗑️ Upload Deletion Flow
 
-**Track student progress.
-Understand improvement.
-Turn Dojo data into actionable insight.**
+```text
+Mentor clicks Delete
+        │
+        ▼
+Confirmation Dialog
+        │
+        ▼
+DELETE /api/uploads/history/:id
+        │
+        ├───────────────┐
+        ▼               ▼
+Delete history      Delete stored file
+record
+        │               │
+        └───────┬───────┘
+                ▼
+       Remove row from UI
+                │
+                ▼
+       Show success message
+```
+
+Processed `Student` documents remain unchanged.
+
+---
+
+## 💾 Database Models
+
+### Student
+
+Student records contain:
+
+* Student ID
+* Email
+* Name
+* Batch
+* Mentor
+* Verified belts
+* Current belt level
+* Total belts earned
+* Total slots attempted
+* Improvement status
+* Languages attempted
+* Same-day progress
+* Slot attempts
+* Timestamps
+
+### UploadHistory
+
+Upload records contain:
+
+* File name
+* Original file name
+* File size
+* Stored file path
+* MIME type
+* Slot number
+* Uploading mentor
+* Processing status
+* Rows processed
+* Processing summary
+* Error information
+* Creation/update timestamps
+
+---
+
+## 🛡️ Security
+
+The application uses:
+
+* JWT authentication
+* Protected backend routes
+* Protected frontend routes
+* Authorization headers
+* Environment variables for sensitive deployment configuration
+* File type validation
+* File size limits
+* Restricted mentor access
+* Centralized authentication/session handling
+
+### Important Security Requirement
+
+Development mentor credentials currently exist in backend configuration and are intended for the current prototype/development workflow.
+
+Before a production-grade release:
+
+* Replace temporary credentials.
+* Do not commit production passwords.
+* Use secure secret management.
+* Rotate JWT secrets.
+* Review authentication and authorization.
+* Review CORS configuration.
+* Review uploaded-file handling.
+* Audit sensitive configuration before deployment.
+
+---
+
+## ⚙️ Environment Variables
+
+### Backend
+
+The backend requires environment configuration similar to:
+
+```env
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secure_jwt_secret
+CLIENT_ORIGIN=http://localhost:3000
+```
+
+Additional deployment-specific variables may be required depending on the data-processing configuration.
+
+> Never commit `.env` files, database credentials, JWT secrets, or other sensitive configuration to Git.
+
+---
+
+## 🚀 Local Development
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/jeevanandjaisankar-JD/Dojo-Pulse.git
+cd Dojo-Pulse
+```
+
+### 2. Install dependencies
+
+From the project root:
+
+```bash
+npm run install:all
+```
+
+### 3. Configure backend environment
+
+Create:
+
+```text
+backend/.env
+```
+
+and configure the required environment variables.
+
+### 4. Start the complete application
+
+From the project root:
+
+```bash
+npm run dev
+```
+
+This starts:
+
+```text
+Frontend → http://localhost:3000
+Backend  → http://localhost:5000
+```
+
+The Vite development server proxies `/api` requests to the backend.
+
+---
+
+## 🧪 Development Commands
+
+### Run frontend
+
+```bash
+npm run dev:frontend
+```
+
+### Run backend
+
+```bash
+npm run dev:backend
+```
+
+### Run both
+
+```bash
+npm run dev
+```
+
+### Build frontend
+
+```bash
+npm run build:frontend
+```
+
+---
+
+## 🌐 Deployment
+
+### Frontend
+
+The frontend is deployed through Vercel.
+
+Production frontend:
+
+```text
+https://dojo-pulse.vercel.app/
+```
+
+### Backend
+
+The backend is deployed through Render.
+
+Production backend:
+
+```text
+https://dojo-pulse.onrender.com/
+```
+
+### Architecture
+
+```text
+                 ┌──────────────────┐
+                 │      Mentor      │
+                 └────────┬─────────┘
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │     Vercel       │
+                 │ React + Vite     │
+                 └────────┬─────────┘
+                          │
+                       /api
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │      Render      │
+                 │ Node + Express   │
+                 └────────┬─────────┘
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │     MongoDB      │
+                 │ Student Data     │
+                 │ Upload History   │
+                 └──────────────────┘
+```
+
+---
+
+## 🌱 Git Branching Strategy
+
+Dojo-Pulse follows a staging-based Git workflow.
+
+### `main`
+
+Production branch.
+
+Purpose:
+
+* Stable production code
+* TL-controlled
+* Only tested changes should reach this branch
+* No direct contributor development
+
+### `deploy`
+
+Integration and staging branch.
+
+Purpose:
+
+* Team integration
+* Feature testing
+* Conflict resolution
+* Staging deployment
+* Pre-production validation
+
+### Feature branches
+
+Team members create dedicated branches for individual tasks.
+
+Example:
+
+```text
+feature/student-analytics
+fix/upload-history
+feat/password-visibility
+chore/update-readme
+```
+
+---
+
+## 🔀 Pull Request Workflow
+
+```text
+Feature Branch
+      │
+      ▼
+   PR → deploy
+      │
+      ▼
+TL Review
+      │
+      ▼
+Testing on deploy
+      │
+      ▼
+Staging Validation
+      │
+      ▼
+PR → main
+      │
+      ▼
+Production
+```
+
+### Rules
+
+* Contributors should create feature branches.
+* Feature branches should target `deploy`.
+* PRs should be reviewed before merging.
+* Changes should be tested on `deploy`.
+* `main` should only receive validated changes.
+* Production changes should be promoted from `deploy` to `main`.
+
+---
+
+## 📋 Current Frontend Improvements
+
+The current frontend includes the following completed improvements:
+
+### Branding
+
+* Kalvium logo added to Navbar.
+* Kalvium logo added to Login page.
+* Login logo alignment adjusted for the existing layout.
+* Dojo upload logo added to the Data Upload dropzone.
+* Dedicated SVG assets stored under `frontend/src/assets/`.
+
+### Authentication
+
+* Dedicated `authService.js`.
+* Centralized JWT token retrieval.
+* Centralized token storage/removal.
+* AuthContext integration.
+* Dedicated logout flow.
+* Protected route handling.
+* Login password visibility toggle.
+
+### Upload Management
+
+* Upload history display.
+* Individual upload deletion.
+* Delete confirmation.
+* Per-row deletion loading state.
+* Success/error messages.
+* Stored upload file deletion.
+* Upload history document deletion.
+* Student records preserved after upload-history deletion.
+
+---
+
+## 📌 Project Status
+
+### Phase 1 — Prototype
+
+**Status: Completed**
+
+The first functional prototype includes:
+
+* Full-stack application structure
+* Mentor authentication
+* Dashboard
+* Student management
+* Student detail view
+* Improvement analytics
+* Dojo data upload
+* Upload history
+* Upload history deletion
+* Mentor profile
+* Protected routes
+* Initial cloud deployment
+* GitHub collaboration workflow
+* Production/staging branch structure
+* Initial frontend branding
+
+### Phase 2 — Planned / Ongoing
+
+Planned improvements include:
+
+* Staging branch deployment
+* UI refinement
+* Additional UX improvements
+* Security hardening
+* Production credential management
+* Authentication improvements
+* Deployment reliability improvements
+* Further analytics enhancements
+* Additional testing
+* Production readiness review
+
+---
+
+## 🧭 Future Improvements
+
+Potential future improvements include:
+
+* Role-based access control
+* More granular mentor permissions
+* Secure database-backed mentor accounts
+* Password reset functionality
+* Better session expiration handling
+* Automated testing
+* Better upload validation and processing feedback
+* Advanced student analytics
+* More detailed mentor reports
+* Improved error monitoring
+* CI/CD automation
+* Separate staging and production databases
+* Stronger production security controls
+
+---
+
+## 👥 Team Workflow
+
+Dojo-Pulse is developed collaboratively by a student team with a TL-controlled integration and production workflow.
+
+Development responsibilities are organized through:
+
+* GitHub Issues
+* Feature branches
+* Pull Requests
+* Code reviews
+* `deploy` staging integration
+* `main` production release
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+See the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🔗 Project Links
+
+### Repository
+
+https://github.com/jeevanandjaisankar-JD/Dojo-Pulse
+
+### Frontend
+
+https://dojo-pulse.vercel.app/
+
+### Backend
+
+https://dojo-pulse.onrender.com/
+
+---
+
+## 🏁 Dojo-Pulse
+
+**A centralized mentor platform for tracking, analyzing, and improving student Dojo progress.**
