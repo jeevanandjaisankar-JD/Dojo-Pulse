@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { loginMentor, getMentorProfile } from '../services/api';
+import {
+  getToken,
+  setToken,
+  logout as logoutSession
+} from '../services/authService';
 
 const AuthContext = createContext(null);
 
@@ -8,7 +13,7 @@ export const AuthProvider = ({ children }) => {
     const saved = localStorage.getItem('dojo_mentor_user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [token, setToken] = useState(() => localStorage.getItem('dojo_mentor_token') || null);
+  const [token, setTokenState] = useState(() => getToken());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,21 +39,21 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     const data = await loginMentor(username, password);
     if (data.success) {
+      setTokenState(data.token);
       setToken(data.token);
       setMentor(data.mentor);
-      localStorage.setItem('dojo_mentor_token', data.token);
       localStorage.setItem('dojo_mentor_user', JSON.stringify(data.mentor));
       return { success: true };
     }
     return { success: false, message: data.message };
   };
 
-  const logout = () => {
-    setToken(null);
-    setMentor(null);
-    localStorage.removeItem('dojo_mentor_token');
-    localStorage.removeItem('dojo_mentor_user');
-  };
+ const logout = () => {
+  logoutSession();
+  setTokenState(null);
+  setMentor(null);
+  localStorage.removeItem('dojo_mentor_user');
+};
 
   return (
     <AuthContext.Provider
