@@ -24,7 +24,7 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#E6EBF2] bg-white/90 backdrop-blur-xl">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-3">
+        <Link to="/" className="flex items-left gap-3">
         </Link>
         <img
         src={kalviumLogo}
