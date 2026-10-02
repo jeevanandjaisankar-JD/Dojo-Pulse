@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Bell, User } from 'lucide-react';
+import { Bell, User } from 'lucide-react';
 import { getMentorProfile } from '../services/api';
 import { unwrap } from './StatCard';
+import kalviumLogo from '../assets/kalvium-logo.svg';
 
 export default function Navbar() {
   const [mentor, setMentor] = useState(null);
@@ -24,11 +25,13 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 border-b border-[#E6EBF2] bg-white/90 backdrop-blur-xl">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E63946] text-white">
-            <Activity size={20} />
-          </span>
-          <span className="text-lg font-extrabold tracking-tight">Dojo Pulse</span>
         </Link>
+        <img
+        src={kalviumLogo}
+        alt="Kalvium"
+        className="h-9 w-auto object-contain"
+        />
+        <span className="text-lg font-extrabold tracking-tight">Dojo Pulse</span>
 
         <div className="flex items-center gap-3">
           <button
