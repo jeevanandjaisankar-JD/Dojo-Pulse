@@ -1,16 +1,41 @@
 const express = require('express');
 const multer = require('multer');
+
 const upload = require('../middlewares/uploadMiddleware');
 const authMiddleware = require('../middlewares/authMiddleware');
-const { uploadDojoFile, getUploadHistory } = require('../controllers/uploadController');
+
+const {
+  uploadDojoFile,
+  getUploadHistory,
+  deleteUploadHistory
+} = require('../controllers/uploadController');
 
 const router = express.Router();
 
-router.post('/', authMiddleware, upload.single('file'), uploadDojoFile);
-router.get('/history', authMiddleware, getUploadHistory);
+// Upload a new Dojo CSV file
+router.post(
+  '/',
+  authMiddleware,
+  upload.single('file'),
+  uploadDojoFile
+);
 
-// Convert Multer validation errors into the same API error shape as the rest
-// of the backend.
+// Get upload history
+router.get(
+  '/history',
+  authMiddleware,
+  getUploadHistory
+);
+
+// Delete one upload history entry
+router.delete(
+  '/history/:id',
+  authMiddleware,
+  deleteUploadHistory
+);
+
+// Convert Multer validation errors into the same API error shape
+// as the rest of the backend.
 router.use((error, req, res, next) => {
   if (error instanceof multer.MulterError || error) {
     return res.status(400).json({
@@ -18,6 +43,7 @@ router.use((error, req, res, next) => {
       message: error.message || 'Unable to upload the selected file.'
     });
   }
+
   return next();
 });
 

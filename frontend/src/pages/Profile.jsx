@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { User, UserX } from 'lucide-react';
+import { User, UserX, LogOut } from 'lucide-react';
 import { getMentorProfile } from '../services/api';
 import { unwrap, humanize } from '../components/StatCard';
+import { useAuth } from '../context/AuthContext';
 
 export default function Profile() {
+  const { logout } = useAuth();
+
   const [mentor, setMentor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -72,6 +75,14 @@ export default function Profile() {
               ))}
             </dl>
           )}
+          <button
+          type="button"
+          onClick={logout}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-5 py-3 font-semibold text-red-600 transition hover:bg-red-50"
+        >
+          <LogOut size={18} />
+          Logout
+          </button>
         </div>
       )}
     </div>
