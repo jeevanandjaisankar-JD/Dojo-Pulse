@@ -91,23 +91,31 @@ export default function Dashboard() {
       if (!alive) return;
 
       if (statsResult.status === 'fulfilled') {
-        setStats(unwrap(statsResult.value));
+        const dashboardData = unwrap(statsResult.value);
+        setStats(dashboardData?.stats ?? dashboardData);
       } else {
         setError('Could not load dashboard stats.');
       }
 
       if (improvementsResult.status === 'fulfilled') {
-        setImprovements(unwrap(improvementsResult.value));
+        const improvementsData = unwrap(improvementsResult.value);
+        setImprovements(improvementsData?.data ?? improvementsData);
+      } else {
+        setError('Could not load improvements analytics.');
       }
 
       if (historyResult.status === 'fulfilled') {
         setHistory(
           toList(historyResult.value, 'history', 'uploads')
         );
+      } else {
+        setError('Could not load upload history.');
       }
 
       if (mentorResult.status === 'fulfilled') {
         setMentor(unwrap(mentorResult.value));
+      } else {
+        setError('Could not load mentor profile.');
       }
 
       setLoading(false);
