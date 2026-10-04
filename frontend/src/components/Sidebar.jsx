@@ -6,10 +6,9 @@ import {
   TrendingUp,
   Upload,
   User,
-  ChevronLeft,
-  ChevronRight
+  Menu,
+  MoreHorizontal
 } from "lucide-react";
-
 import { NavLink } from "react-router-dom";
 
 const menu = [
@@ -51,9 +50,23 @@ export default function Sidebar() {
           collapsed ? "w-20" : "w-64"
         }`}
       >
+         {/* Collapse button */}
+         <button
+         type="button"
+         onClick={() => setCollapsed((value) => !value)}
+         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+         className="mb-4 flex w-full items-center justify-center rounded-xl border border-slate-700 bg-[#0F172A] py-2 text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+         >
+          {collapsed ? (
+            <MoreHorizontal size={22} />
+          ) : (
+          <Menu size={22} />
+          )}
+          </button>
+          
         {!collapsed && (
           <p className="mb-4 text-xs uppercase tracking-wider text-slate-500">
-            Main Navigation
+            Menu
           </p>
         )}
 
@@ -100,18 +113,6 @@ export default function Sidebar() {
             <ChevronLeft size={18} />
           )}
         </button>
-
-        {!collapsed && (
-          <div className="mt-8 rounded-xl border border-red-500/20 bg-[#0F172A] p-4">
-            <h3 className="text-sm font-semibold text-white">
-              DOJO BELT SYSTEM
-            </h3>
-
-            <p className="mt-2 text-xs text-slate-400">
-              Track JavaScript, Python, Java & C++ progress.
-            </p>
-          </div>
-        )}
       </aside>
 
       {/* Mobile Bottom Navigation */}
