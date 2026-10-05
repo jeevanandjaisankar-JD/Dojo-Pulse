@@ -8,24 +8,28 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
-      {/* Navbar stays above everything */}
+      {/* Navbar
+          z-50 keeps it above the fixed sidebar
+      */}
       <Navbar />
 
-      {/* Sidebar + Main Content */}
-      <div className="flex">
-        <Sidebar
-          collapsed={sidebarCollapsed}
-          setCollapsed={setSidebarCollapsed}
-        />
+      {/* Sidebar
+          Fixed from top:0 and z-40.
+          Navbar visually overlaps it.
+      */}
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        setCollapsed={setSidebarCollapsed}
+      />
 
-        <main
-          className={`min-w-0 flex-1 overflow-auto p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8 transition-all duration-300 ${
-            sidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
-          }`}
-        >
-          <Outlet />
-        </main>
-      </div>
+      {/* Main Content */}
+      <main
+        className={`min-w-0 overflow-auto p-4 pb-24 transition-all duration-300 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8 ${
+          sidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
+        }`}
+      >
+        <Outlet />
+      </main>
     </div>
   );
 }

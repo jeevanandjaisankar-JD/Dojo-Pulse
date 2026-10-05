@@ -42,16 +42,18 @@ export default function Sidebar({ collapsed, setCollapsed }) {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-40 hidden h-screen shrink-0 border-r border-[#D5D9E0] bg-[#e4e6eb] p-4 transition-all duration-300 lg:block ${
+        className={`fixed left-0 top-0 z-40 hidden h-screen border-r border-[#D5D9E0] bg-[#e4e6eb] p-4 transition-all duration-300 lg:block ${
           collapsed ? "w-20" : "w-64"
         }`}
       >
-        {/* Collapse / Expand Button */}
+        {/* Collapse Button */}
         <button
           type="button"
           onClick={() => setCollapsed((value) => !value)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="mb-4 flex w-full items-center justify-center rounded-xl border border-[#CDD1D8] bg-[#F1F2F5] py-2 text-[#334155] transition-colors hover:bg-[#D8DBE1] hover:text-[#0F172A]"
+          className={`mb-6 flex h-10 items-center rounded-xl border border-[#CDD1D8] bg-[#F1F2F5] text-[#334155] transition-all duration-200 hover:bg-[#D8DBE1] hover:text-[#0F172A] ${
+            collapsed ? "w-full justify-center" : "w-full justify-start px-3"
+          }`}
         >
           {collapsed ? (
             <Menu size={22} />
@@ -62,7 +64,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
 
         {/* Menu Label */}
         {!collapsed && (
-          <p className="mb-4 text-xs uppercase tracking-wider text-[#64748B]">
+          <p className="mb-4 px-1 text-xs font-semibold uppercase tracking-wider text-[#64748B]">
             Menu
           </p>
         )}
@@ -78,13 +80,13 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 to={item.path}
                 end={item.path === "/"}
                 className={({ isActive }) =>
-                  `flex items-center rounded-xl py-3 transition-all ${
+                  `flex items-center rounded-xl py-3 transition-all duration-200 ${
                     collapsed
                       ? "justify-center px-0"
                       : "gap-3 px-4"
                   } ${
                     isActive
-                      ? "bg-[#E63946] text-white"
+                      ? "bg-[#E63946] text-white shadow-sm"
                       : "text-[#334155] hover:bg-[#D8DBE1]"
                   }`
                 }
@@ -92,7 +94,9 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 <Icon size={20} />
 
                 {!collapsed && (
-                  <span>{item.name}</span>
+                  <span className="font-medium">
+                    {item.name}
+                  </span>
                 )}
               </NavLink>
             );
@@ -120,6 +124,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 }
               >
                 <Icon size={20} />
+
                 <span>{item.name}</span>
               </NavLink>
             );
