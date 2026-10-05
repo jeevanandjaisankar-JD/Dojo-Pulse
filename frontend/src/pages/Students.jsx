@@ -1,186 +1,333 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, Users } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Search, Eye } from 'lucide-react';
+
 import { getStudents } from '../services/api';
-import { toList } from '../components/StatCard';
-import { BeltBadge } from '../components/BeltChart';
 
-const sid = (s) =>
-  s.id ?? s._id ?? s.student_id ?? s.studentId;
-
-const sname = (s) =>
-  s.name ??
-  s.full_name ??
-  s.fullName ??
-  s.student_name ??
-  'Unnamed';
-
-const slang = (s) =>
-  s.language ??
-  s.lang ??
-  s.primary_language ??
-  s.primaryLanguage ??
-  '';
-
-const sbelt = (s) =>
-  s.belt ??
-  s.current_belt ??
-  s.currentBelt ??
-  '';
-
-const sbatch = (s) =>
-  s.batch ??
-  s.squad ??
-  '';
-
-const slanguages = (s) => {
-  if (Array.isArray(s.languagesAttempted)) {
-    return s.languagesAttempted;
-  }
-
-  const language = slang(s);
-  return language ? [language] : [];
-};
-
-const isimproved = (s) =>
-  s.improvementStatus === 'IMPROVED';
-
-export default function Students() {
+const Students = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState('all');
+
+  /*
+   * Read the filter from the URL.
+   *
+   * Examples:
+   * /students
+   * /students?filter=improved
+   * /students?filter=attention
+   * /students?filter=squad138
+   * /students?filter=python
+   */
+  const [filter, setFilter] = useState(
+    searchParams.get('filter') || 'all'
+  );
+
+  /* =========================================================
+     Helpers
+     ========================================================= */
+
+  const sname = (student) =>
+    student?.name ||
+    student?.studentName ||
+    student?.fullName ||
+    'Unknown Student';
+
+  const sid = (student) =>
+    student?.studentId ||
+    student?.id ||
+    student?._id ||
+    '';
+
+  const semail = (student) =>
+    student?.email ||
+    student?.studentEmail ||
+    '—';
+
+  const sbatch = (student) =>
+    student?.batch ||
+    student?.squad ||
+    '';
+
+  const slanguages = (student) => {
+    if (Array.isArray(student?.languagesAttempted)) {
+      return student.languagesAttempted;
+    }
+
+    if (Array.isArray(student?.languages)) {
+      return student.languages;
+    }
+
+    if (typeof student?.language === 'string') {
+      return student.language ? [student.language] : [];
+    }
+
+    return [];
+  };
+
+  const isimproved = (student) =>
+    student?.improvementStatus === 'IMPROVED';
+
+  /* =========================================================
+     Load Students
+     ========================================================= */
 
   useEffect(() => {
-    let alive = true;
+    const loadStudents = async () => {
+      try {
+        setLoading(true);
+        setError('');
 
-    getStudents()
-      .then((res) => {
-        if (alive) {
-          setStudents(toList(res, 'students'));
-        }
-      })
-      .catch(() => {
-        if (alive) {
-          setError('Could not load students. Please try again.');
-        }
-      })
-      .finally(() => {
-        if (alive) {
-          setLoading(false);
-        }
-      });
+        const response = await getStudents();
 
-    return () => {
-      alive = false;
+        const data =
+          response?.data?.data ??
+          response?.data?.students ??
+          response?.data ??
+          response;
+
+        setStudents(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Failed to load students:', err);
+        setError('Could not load students.');
+      } finally {
+        setLoading(false);
+      }
     };
+
+    loadStudents();
   }, []);
 
-  const filtered = useMemo(() => {
+  /* =========================================================
+     Keep Filter In Sync With URL
+     ========================================================= */
+
+  useEffect(() => {
+    const urlFilter = searchParams.get('filter') || 'all';
+
+    if (urlFilter !== filter) {
+      setFilter(urlFilter);
+    }
+  }, [searchParams]);
+
+  /* =========================================================
+     Filter Change
+     ========================================================= */
+
+  const handleFilterChange = (event) => {
+    const value = event.target.value;
+
+    setFilter(value);
+
+    if (value === 'all') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ filter: value });
+    }
+  };
+
+  /* =========================================================
+     Filter Students
+     ========================================================= */
+
+  const filteredStudents = useMemo(() => {
     const q = query.trim().toLowerCase();
 
-    return students.filter((s) => {
+    return students.filter((student) => {
+      /* Search */
       const matchesSearch =
         !q ||
-        sname(s).toLowerCase().includes(q);
+        sname(student).toLowerCase().includes(q) ||
+        sid(student).toLowerCase().includes(q) ||
+        semail(student).toLowerCase().includes(q);
 
       if (!matchesSearch) {
         return false;
       }
 
+      /* Filter */
       switch (filter) {
         case 'improved':
-          return isimproved(s);
+          return isimproved(student);
 
         case 'attention':
-          return !isimproved(s);
+          return !isimproved(student);
 
         case 'squad138':
-          return sbatch(s)
+          return sbatch(student)
             .toLowerCase()
             .includes('138');
 
         case 'squad139':
-          return sbatch(s)
+          return sbatch(student)
             .toLowerCase()
             .includes('139');
 
         case 'python':
-          return slanguages(s).some(
+          return slanguages(student).some(
             (language) =>
               String(language).toLowerCase() === 'python'
           );
 
         case 'nodejs':
-          return slanguages(s).some((language) =>
+          return slanguages(student).some((language) =>
             ['node.js', 'nodejs', 'node'].includes(
               String(language).toLowerCase()
             )
           );
 
         case 'java':
-          return slanguages(s).some(
+          return slanguages(student).some(
             (language) =>
               String(language).toLowerCase() === 'java'
           );
 
         case 'cpp':
-          return slanguages(s).some((language) =>
+          return slanguages(student).some((language) =>
             ['c++', 'cpp', 'c plus plus'].includes(
               String(language).toLowerCase()
             )
           );
 
+        case 'all':
         default:
           return true;
       }
     });
   }, [students, query, filter]);
 
-  return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 pb-28 sm:p-6 md:pb-8 lg:p-8">
+  /* =========================================================
+     Filter Label
+     ========================================================= */
 
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">
+  const filterLabel = useMemo(() => {
+    switch (filter) {
+      case 'improved':
+        return 'Improved Students';
+
+      case 'attention':
+        return 'Needs Attention';
+
+      case 'squad138':
+        return 'Squad 138';
+
+      case 'squad139':
+        return 'Squad 139';
+
+      case 'python':
+        return 'Python';
+
+      case 'nodejs':
+        return 'Node.js';
+
+      case 'java':
+        return 'Java';
+
+      case 'cpp':
+        return 'C++';
+
+      default:
+        return 'All Students';
+    }
+  }, [filter]);
+
+  /* =========================================================
+     Loading
+     ========================================================= */
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-[#0F172A]">
           Students
         </h1>
 
-        <p className="mt-1 text-[#64748B]">
-          {loading
-            ? 'Loading…'
-            : `${filtered.length} of ${students.length} students`}
+        <div className="mt-6 overflow-hidden rounded-2xl border border-[#E6EBF2] bg-white">
+          <div className="animate-pulse space-y-4 p-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-12 rounded-lg bg-[#E2E8F0]"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* =========================================================
+     Error
+     ========================================================= */
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-[#0F172A]">
+          Students
+        </h1>
+
+        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-600">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  /* =========================================================
+     Render
+     ========================================================= */
+
+  return (
+    <div className="p-6">
+      {/* =====================================================
+          Header
+          ===================================================== */}
+
+      <div>
+        <h1 className="text-2xl font-bold text-[#0F172A]">
+          Students
+        </h1>
+
+        <p className="mt-1 text-sm text-[#64748B]">
+          View and track student progress.
         </p>
       </div>
 
-      {/* Search + Filter */}
-      <div className="flex flex-col gap-3 sm:flex-row">
+      {/* =====================================================
+          Search + Filter
+          ===================================================== */}
 
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Search */}
-        <div className="relative flex-1">
+        <div className="relative w-full sm:max-w-md">
           <Search
-            size={16}
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#94A3B8]"
+            size={18}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]"
           />
 
           <input
+            type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search students by name"
-            aria-label="Search students"
-            className="input-base pl-10"
+            onChange={(event) =>
+              setQuery(event.target.value)
+            }
+            placeholder="Search students..."
+            className="input-base w-full pl-10"
           />
         </div>
 
-        {/* Student Filters */}
+        {/* Filter */}
         <select
           value={filter}
-          onChange={(e) => setFilter(e.target.value)}
+          onChange={handleFilterChange}
           aria-label="Filter students"
-          className="input-base sm:w-56"
+          className="input-base w-full sm:w-56"
         >
           <option value="all">
             All Students
@@ -220,117 +367,183 @@ export default function Students() {
         </select>
       </div>
 
-      {/* Error */}
-      {error && (
-        <div className="rounded-2xl border border-[#E63946]/30 bg-[#FDECEE] px-4 py-3 text-sm text-[#B91C1C]">
-          {error}
+      {/* =====================================================
+          Active Filter
+          ===================================================== */}
+
+      <div className="mt-5 flex items-center justify-between">
+        <div>
+          <p className="text-sm text-[#64748B]">
+            Showing
+          </p>
+
+          <p className="text-lg font-semibold text-[#0F172A]">
+            {filterLabel}
+          </p>
         </div>
-      )}
 
-      {/* Students Table */}
-      <div className="card overflow-hidden p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-left text-sm">
+        <p className="text-sm text-[#64748B]">
+          {filteredStudents.length}{' '}
+          {filteredStudents.length === 1
+            ? 'student'
+            : 'students'}
+        </p>
+      </div>
 
-            <thead className="border-b border-[#E6EBF2] bg-[#F8FAFC] text-[#64748B]">
-              <tr>
-                <th className="px-6 py-4 font-semibold">
-                  Student
-                </th>
+      {/* =====================================================
+          Students Table
+          ===================================================== */}
 
-                <th className="px-6 py-4 font-semibold">
-                  Language
-                </th>
+      <div className="mt-4 overflow-hidden rounded-2xl border border-[#E6EBF2] bg-white">
+        {filteredStudents.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px]">
+              <thead className="bg-[#F8FAFC]">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                    Student
+                  </th>
 
-                <th className="px-6 py-4 font-semibold">
-                  Belt
-                </th>
-              </tr>
-            </thead>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                    Student ID
+                  </th>
 
-            <tbody>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                    Email
+                  </th>
 
-              {/* Loading Skeleton */}
-              {loading &&
-                [0, 1, 2, 3, 4].map((i) => (
-                  <tr
-                    key={i}
-                    className="border-b border-[#E6EBF2] last:border-0"
-                  >
-                    <td
-                      className="px-6 py-4"
-                      colSpan={3}
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                    Squad
+                  </th>
+
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                    Languages
+                  </th>
+
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                    Status
+                  </th>
+
+                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-[#E6EBF2]">
+                {filteredStudents.map((student) => {
+                  const languages =
+                    slanguages(student);
+
+                  const improved =
+                    isimproved(student);
+
+                  return (
+                    <tr
+                      key={
+                        student._id ??
+                        student.studentId
+                      }
+                      className="transition-colors hover:bg-[#F8FAFC]"
                     >
-                      <div className="skeleton h-6 w-full" />
-                    </td>
-                  </tr>
-                ))}
+                      {/* Student */}
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-[#0F172A]">
+                          {sname(student)}
+                        </div>
+                      </td>
 
-              {/* Students */}
-              {!loading &&
-                filtered.map((s, i) => (
-                  <tr
-                    key={sid(s) ?? i}
-                    onClick={() =>
-                      sid(s) != null &&
-                      navigate(`/students/${sid(s)}`)
-                    }
-                    className="cursor-pointer border-b border-[#E6EBF2] transition-colors last:border-0 hover:bg-[#F4F8FF]"
-                  >
+                      {/* ID */}
+                      <td className="px-6 py-4 text-sm text-[#64748B]">
+                        {sid(student) || '—'}
+                      </td>
 
-                    {/* Student */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
+                      {/* Email */}
+                      <td className="px-6 py-4 text-sm text-[#64748B]">
+                        {semail(student)}
+                      </td>
 
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EAF2FF] font-bold text-[#2563EB]">
-                          {sname(s)
-                            .charAt(0)
-                            .toUpperCase()}
+                      {/* Squad */}
+                      <td className="px-6 py-4 text-sm text-[#64748B]">
+                        {sbatch(student) || '—'}
+                      </td>
+
+                      {/* Languages */}
+                      <td className="px-6 py-4 text-sm text-[#64748B]">
+                        {languages.length > 0
+                          ? languages.join(', ')
+                          : '—'}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                            improved
+                              ? 'bg-green-50 text-green-700'
+                              : 'bg-orange-50 text-orange-700'
+                          }`}
+                        >
+                          {improved
+                            ? 'Improved'
+                            : 'Needs Attention'}
                         </span>
+                      </td>
 
-                        <span className="font-semibold">
-                          {sname(s)}
-                        </span>
+                      {/* Action */}
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(
+                              `/students/${student.studentId ?? student._id}`
+                            )
+                          }
+                          className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[#2563EB] transition-colors hover:bg-[#EFF6FF]"
+                        >
+                          <Eye size={16} />
 
-                      </div>
-                    </td>
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          /* =================================================
+             Empty State
+             ================================================= */
 
-                    {/* Languages */}
-                    <td className="px-6 py-4 text-[#64748B]">
-                      {slanguages(s).length > 0
-                        ? slanguages(s).join(', ')
-                        : '—'}
-                    </td>
+          <div className="p-10 text-center">
+            <p className="text-base font-semibold text-[#0F172A]">
+              No students found
+            </p>
 
-                    {/* Belt */}
-                    <td className="px-6 py-4">
-                      <BeltBadge belt={sbelt(s)} />
-                    </td>
+            <p className="mt-1 text-sm text-[#64748B]">
+              No students match the current search or filter.
+            </p>
 
-                  </tr>
-                ))}
-
-            </tbody>
-          </table>
-        </div>
-
-        {/* Empty State */}
-        {!loading &&
-          filtered.length === 0 &&
-          !error && (
-            <div className="flex flex-col items-center gap-2 py-14 text-center text-[#64748B]">
-
-              <Users size={28} />
-
-              <p className="text-sm">
-                {students.length === 0
-                  ? 'No students yet. Upload dojo data to add them.'
-                  : 'No students match your filters.'}
-              </p>
-
-            </div>
-          )}
+            {(filter !== 'all' || query) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery('');
+                  setFilter('all');
+                  setSearchParams({});
+                }}
+                className="mt-4 rounded-lg bg-[#2563EB] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#1D4ED8]"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
-}
+};
+
+export default Students;

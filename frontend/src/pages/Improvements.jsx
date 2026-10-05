@@ -1,138 +1,42 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp } from 'lucide-react';
-
+import StatCard from '../components/StatCard';
 import { getImprovementsAnalytics } from '../services/api';
 
-import StatCard, {
-  unwrap,
-  toPairs,
-  humanize,
-  fmtVal,
-} from '../components/StatCard';
-
-import BeltChart from '../components/BeltChart';
-
-const TONE_CYCLE = ['blue', 'green', 'amber', 'red'];
-
-const isPrimitive = (v) =>
-  typeof v === 'number' ||
-  (typeof v === 'string' && v.length < 24);
-
-function DataTable({ title, rows }) {
-  const cols = Object.keys(rows[0] || {})
-    .filter((k) => isPrimitive(rows[0][k]))
-    .slice(0, 6);
-
-  if (cols.length === 0) return null;
-
-  return (
-    <div className="card overflow-hidden p-0">
-      <h3 className="px-6 pt-6 text-lg font-bold">
-        {title}
-      </h3>
-
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[520px] text-left text-sm">
-          <thead className="border-y border-[#E6EBF2] bg-[#F8FAFC] text-[#64748B]">
-            <tr>
-              {cols.map((c) => (
-                <th
-                  key={c}
-                  className="px-6 py-3 font-semibold"
-                >
-                  {humanize(c)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {rows.map((r, i) => (
-              <tr
-                key={i}
-                className="border-b border-[#E6EBF2] last:border-0 hover:bg-[#F4F8FF]"
-              >
-                {cols.map((c) => (
-                  <td
-                    key={c}
-                    className="px-6 py-3"
-                  >
-                    {r[c] == null
-                      ? '—'
-                      : typeof r[c] === 'number'
-                        ? fmtVal(r[c])
-                        : r[c]}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-export default function Improvements() {
+const Improvements = () => {
   const navigate = useNavigate();
 
-  const [data, setData] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    let alive = true;
+    const loadAnalytics = async () => {
+      try {
+        setLoading(true);
+        setError('');
 
-    getImprovementsAnalytics()
-      .then((res) => {
-        if (alive) {
-          setData(unwrap(res));
-        }
-      })
-      .catch(() => {
-        if (alive) {
-          setError(
-            'Could not load improvement analytics.'
-          );
-        }
-      })
-      .finally(() => {
-        if (alive) {
-          setLoading(false);
-        }
-      });
+        const response = await getImprovementsAnalytics();
 
-    return () => {
-      alive = false;
+        const data =
+          response?.data?.data ??
+          response?.data ??
+          response;
+
+        setAnalytics(data);
+      } catch (err) {
+        console.error('Failed to load improvements analytics:', err);
+        setError('Could not load improvements analytics.');
+      } finally {
+        setLoading(false);
+      }
     };
+
+    loadAnalytics();
   }, []);
 
-  const entries = Object.entries(
-    data &&
-      typeof data === 'object' &&
-      !Array.isArray(data)
-      ? data
-      : { improvements: data || [] }
-  );
-
-  const tiles = entries.filter(([, v]) =>
-    isPrimitive(v)
-  );
-
-  const groups = entries.filter(
-    ([, v]) => v && typeof v === 'object'
-  );
-
-  /*
-   * Tile navigation
-   *
-   * Improved Students -> Students page filtered by improved
-   * Not Improved -> Students page filtered by attention
-   * Other aggregate metrics -> All Students
-   */
   const getTileAction = (label) => {
-    const normalizedLabel = label
+    const normalizedLabel = String(label)
       .toLowerCase()
       .replace(/_/g, ' ');
 
@@ -154,123 +58,240 @@ export default function Improvements() {
     return () => navigate('/students?filter=all');
   };
 
-  return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 pb-28 sm:p-6 md:pb-8 lg:p-8">
+  const stats = [
+    {
+      label: 'Total Students',
+      value: analytics?.totalStudents ?? 0,
+    },
+    {
+      label: 'Improved Students',
+      value: analytics?.improvedCount ?? 0,
+    },
+    {
+      label: 'Not Improved',
+      value: analytics?.notImprovedCount ?? 0,
+    },
+    {
+      label: 'Improvement Rate',
+      value: `${analytics?.improvementRate ?? 0}%`,
+    },
+    {
+      label: 'Total Slots Happened',
+      value: analytics?.totalSlotsHappened ?? 0,
+    },
+    {
+      label: 'Total Belts Earned',
+      value: analytics?.totalBeltsEarned ?? 0,
+    },
+  ];
 
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">
+  if (loading) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-[#0F172A]">
           Improvements
         </h1>
 
-        <p className="mt-1 text-[#64748B]">
-          See how students are progressing over time.
-        </p>
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="rounded-2xl border border-[#E63946]/30 bg-[#FDECEE] px-4 py-3 text-sm text-[#B91C1C]">
-          {error}
-        </div>
-      )}
-
-      {loading ? (
-        /* Loading */
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
-            <StatCard
-              key={i}
-              loading
-              label="Loading"
-              icon={TrendingUp}
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-32 animate-pulse rounded-2xl bg-[#E2E8F0]"
             />
           ))}
         </div>
-      ) : (
-        <>
-          {/* Improvement Tiles */}
-          {tiles.length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {tiles.map(([k, v], i) => {
-                const label = humanize(k);
-                const handleClick =
-                  getTileAction(label);
+      </div>
+    );
+  }
 
-                return (
-                  <button
-                    type="button"
-                    key={k}
-                    onClick={handleClick}
-                    className="text-left transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40"
-                  >
-                    <StatCard
-                      label={label}
-                      value={fmtVal(v)}
-                      icon={TrendingUp}
-                      tone={
-                        TONE_CYCLE[
-                          i % TONE_CYCLE.length
-                        ]
-                      }
-                    />
-                  </button>
-                );
-              })}
+  if (error) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-[#0F172A]">
+          Improvements
+        </h1>
+
+        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-600">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-[#0F172A]">
+          Improvements
+        </h1>
+
+        <p className="mt-1 text-sm text-[#64748B]">
+          Track student improvement, progress and performance analytics.
+        </p>
+      </div>
+
+      {/* Statistics */}
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {stats.map((item) => (
+          <button
+            key={item.label}
+            type="button"
+            onClick={getTileAction(item.label)}
+            className="group block w-full rounded-2xl text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40"
+          >
+            <StatCard
+              label={item.label}
+              value={item.value}
+            />
+          </button>
+        ))}
+      </div>
+
+      {/* Progress Overview */}
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-[#0F172A]">
+          Progress Overview
+        </h2>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* Progress Happened */}
+          <div className="rounded-2xl border border-[#E6EBF2] bg-white p-5">
+            <h3 className="text-sm font-semibold text-[#0F172A]">
+              Progress Happened
+            </h3>
+
+            <div className="mt-4 space-y-3">
+              {analytics?.progressHappened &&
+              Object.keys(analytics.progressHappened).length > 0 ? (
+                Object.entries(analytics.progressHappened).map(
+                  ([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between rounded-xl bg-[#F8FAFC] px-4 py-3"
+                    >
+                      <span className="text-sm capitalize text-[#64748B]">
+                        {key.replace(/([A-Z])/g, ' $1')}
+                      </span>
+
+                      <span className="font-semibold text-[#0F172A]">
+                        {value}
+                      </span>
+                    </div>
+                  )
+                )
+              ) : (
+                <p className="text-sm text-[#64748B]">
+                  No progress data available.
+                </p>
+              )}
             </div>
-          )}
-
-          {/* Analytics Groups */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            {groups.map(([k, v]) => {
-              const pairs = toPairs(v);
-
-              if (pairs.length > 0) {
-                return (
-                  <BeltChart
-                    key={k}
-                    title={humanize(k)}
-                    data={pairs}
-                    colorByBelt={false}
-                  />
-                );
-              }
-
-              if (
-                Array.isArray(v) &&
-                v.length > 0 &&
-                typeof v[0] === 'object'
-              ) {
-                return (
-                  <div
-                    key={k}
-                    className="lg:col-span-2"
-                  >
-                    <DataTable
-                      title={humanize(k)}
-                      rows={v}
-                    />
-                  </div>
-                );
-              }
-
-              return null;
-            })}
           </div>
 
-          {/* Empty State */}
-          {!error &&
-            tiles.length === 0 &&
-            groups.every(
-              ([, v]) => !v || v.length === 0
-            ) && (
-              <div className="card py-14 text-center text-sm text-[#64748B]">
-                No improvement data yet. Upload dojo data
-                to see trends.
-              </div>
-            )}
-        </>
-      )}
+          {/* Languages */}
+          <div className="rounded-2xl border border-[#E6EBF2] bg-white p-5">
+            <h3 className="text-sm font-semibold text-[#0F172A]">
+              Languages
+            </h3>
+
+            <div className="mt-4 space-y-3">
+              {analytics?.languages &&
+              Object.keys(analytics.languages).length > 0 ? (
+                Object.entries(analytics.languages).map(
+                  ([language, count]) => (
+                    <div
+                      key={language}
+                      className="flex items-center justify-between rounded-xl bg-[#F8FAFC] px-4 py-3"
+                    >
+                      <span className="text-sm text-[#64748B]">
+                        {language}
+                      </span>
+
+                      <span className="font-semibold text-[#0F172A]">
+                        {count}
+                      </span>
+                    </div>
+                  )
+                )
+              ) : (
+                <p className="text-sm text-[#64748B]">
+                  No language data available.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-[#0F172A]">
+          Progress Timeline
+        </h2>
+
+        <div className="mt-4 overflow-hidden rounded-2xl border border-[#E6EBF2] bg-white">
+          {analytics?.timelineProgress?.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[650px]">
+                <thead className="bg-[#F8FAFC]">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                      Period
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                      Slots Attempted
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                      Belts Earned
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                      Languages
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-[#E6EBF2]">
+                  {analytics.timelineProgress.map((item, index) => (
+                    <tr
+                      key={`${item.period || 'period'}-${index}`}
+                      className="hover:bg-[#F8FAFC]"
+                    >
+                      <td className="px-6 py-4 text-sm font-medium text-[#0F172A]">
+                        {item.period ?? '—'}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-[#64748B]">
+                        {item.slotsAttempted ?? 0}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-[#64748B]">
+                        {item.beltsEarned ?? 0}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-[#64748B]">
+                        {item.languages
+                          ? typeof item.languages === 'object'
+                            ? Object.keys(item.languages).join(', ')
+                            : String(item.languages)
+                          : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-6 text-sm text-[#64748B]">
+              No timeline data available.
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default Improvements;
