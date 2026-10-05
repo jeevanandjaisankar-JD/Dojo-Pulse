@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   CalendarClock,
@@ -72,6 +72,8 @@ const greetingWord = () => {
 };
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+
   const [stats, setStats] = useState(null);
   const [improvements, setImprovements] = useState(null);
   const [mentor, setMentor] = useState(null);
@@ -87,39 +89,43 @@ export default function Dashboard() {
       getImprovementsAnalytics(),
       getUploadHistory(),
       getMentorProfile(),
-    ]).then(([statsResult, improvementsResult, historyResult, mentorResult]) => {
-      if (!alive) return;
+    ]).then(
+      ([statsResult, improvementsResult, historyResult, mentorResult]) => {
+        if (!alive) return;
 
-      if (statsResult.status === 'fulfilled') {
-        const dashboardData = unwrap(statsResult.value);
-        setStats(dashboardData?.stats ?? dashboardData);
-      } else {
-        setError('Could not load dashboard stats.');
+        if (statsResult.status === 'fulfilled') {
+          const dashboardData = unwrap(statsResult.value);
+          setStats(dashboardData?.stats ?? dashboardData);
+        } else {
+          setError('Could not load dashboard stats.');
+        }
+
+        if (improvementsResult.status === 'fulfilled') {
+          const improvementsData = unwrap(improvementsResult.value);
+          setImprovements(
+            improvementsData?.data ?? improvementsData
+          );
+        } else {
+          setError('Could not load improvements analytics.');
+        }
+
+        if (historyResult.status === 'fulfilled') {
+          setHistory(
+            toList(historyResult.value, 'history', 'uploads')
+          );
+        } else {
+          setError('Could not load upload history.');
+        }
+
+        if (mentorResult.status === 'fulfilled') {
+          setMentor(unwrap(mentorResult.value));
+        } else {
+          setError('Could not load mentor profile.');
+        }
+
+        setLoading(false);
       }
-
-      if (improvementsResult.status === 'fulfilled') {
-        const improvementsData = unwrap(improvementsResult.value);
-        setImprovements(improvementsData?.data ?? improvementsData);
-      } else {
-        setError('Could not load improvements analytics.');
-      }
-
-      if (historyResult.status === 'fulfilled') {
-        setHistory(
-          toList(historyResult.value, 'history', 'uploads')
-        );
-      } else {
-        setError('Could not load upload history.');
-      }
-
-      if (mentorResult.status === 'fulfilled') {
-        setMentor(unwrap(mentorResult.value));
-      } else {
-        setError('Could not load mentor profile.');
-      }
-
-      setLoading(false);
-    });
+    );
 
     return () => {
       alive = false;
@@ -148,8 +154,8 @@ export default function Dashboard() {
       tone: 'green',
     },
     {
-      label: 'Not Improved',
-      value: stats?.notImprovedStudents ?? 0,
+      label: 'Needs Attention',
+      value: stats?.needsAttentionStudents ?? 0,
       tone: 'red',
     },
     {
@@ -175,39 +181,42 @@ export default function Dashboard() {
   ];
 
   // Real language data from stats.languages
-  const languages = Object.entries(stats?.languages ?? {}).map(
-    ([label, value]) => ({
-      label,
-      value: Number(value?.slots) || 0,
-    })
-  );
+  const languages = Object.entries(
+    stats?.languages ?? {}
+  ).map(([label, value]) => ({
+    label,
+    value: Number(value?.slots) || 0,
+  }));
 
-  // Backend does not provide a belt-distribution object.
-  // This chart therefore shows belts earned by language.
-  const belts = Object.entries(stats?.languages ?? {}).map(
-    ([label, value]) => ({
-      label,
-      value: Number(value?.beltsEarned) || 0,
-    })
-  );
+  // Belts earned by language
+  const belts = Object.entries(
+    stats?.languages ?? {}
+  ).map(([label, value]) => ({
+    label,
+    value: Number(value?.beltsEarned) || 0,
+  }));
 
   // Real improvement analytics fields
   const improvementTiles = [
     {
       label: 'Improved Students',
       value: improvements?.improvedCount ?? 0,
+      onclick: () => navigate('/students?filter=improved'),
     },
     {
-      label: 'Not Improved',
+      label: 'Needs Attention',
       value: improvements?.notImprovedCount ?? 0,
+      onclick: () => navigate('/students?filter=attention'),
     },
     {
       label: 'Improvement Rate',
       value: `${improvements?.improvementRate ?? 0}%`,
+      onclick: () => navigate('/students?filter=all'),
     },
     {
       label: 'Belts Earned',
       value: improvements?.totalBeltsEarned ?? 0,
+      onclick: () => navigate('/students?filter=all'),
     },
   ];
 
@@ -223,7 +232,9 @@ export default function Dashboard() {
   const recentActivity = toList(stats?.recentActivity);
 
   const dayItems = recentActivity
-    .filter((item) => isToday(item.timestamp ?? item.date))
+    .filter((item) =>
+      isToday(item.timestamp ?? item.date)
+    )
     .map((item) => ({
       title: item.student ?? 'Student',
       time: fmtTime(item.timestamp ?? item.date),
@@ -232,11 +243,14 @@ export default function Dashboard() {
       }`,
     }));
 
-  const today = new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  });
+  const today = new Date().toLocaleDateString(
+    undefined,
+    {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    }
+  );
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 pb-28 sm:p-6 md:pb-8 lg:p-8">
@@ -459,11 +473,14 @@ export default function Dashboard() {
             </p>
           ) : (
             <>
+              {/* Clickable Improvement Tiles */}
               <div className="mt-5 grid grid-cols-2 gap-3">
                 {improvementTiles.map((item) => (
-                  <div
+                  <button
+                    type="button"
                     key={item.label}
-                    className="rounded-2xl border border-[#E6EBF2] bg-[#F8FAFC] p-4"
+                    onClick={item.onclick}
+                    className="rounded-2xl border border-[#E6EBF2] bg-[#F8FAFC] p-4 text-left transition-all hover:border-[#2563EB]/30 hover:bg-white hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40"
                   >
                     <p className="text-xs text-[#64748B]">
                       {item.label}
@@ -472,10 +489,11 @@ export default function Dashboard() {
                     <p className="mt-1 text-2xl font-extrabold">
                       {item.value}
                     </p>
-                  </div>
+                  </button>
                 ))}
               </div>
 
+              {/* Improvement Bars */}
               {improvementBars.length > 0 && (
                 <div className="mt-4 space-y-2">
                   {improvementBars

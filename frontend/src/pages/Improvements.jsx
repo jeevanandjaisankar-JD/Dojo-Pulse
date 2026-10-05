@@ -1,27 +1,70 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { TrendingUp } from 'lucide-react';
+
 import { getImprovementsAnalytics } from '../services/api';
-import StatCard, { unwrap, toPairs, humanize, fmtVal } from '../components/StatCard';
+
+import StatCard, {
+  unwrap,
+  toPairs,
+  humanize,
+  fmtVal,
+} from '../components/StatCard';
+
 import BeltChart from '../components/BeltChart';
 
 const TONE_CYCLE = ['blue', 'green', 'amber', 'red'];
-const isPrimitive = (v) => typeof v === 'number' || (typeof v === 'string' && v.length < 24);
+
+const isPrimitive = (v) =>
+  typeof v === 'number' ||
+  (typeof v === 'string' && v.length < 24);
 
 function DataTable({ title, rows }) {
-  const cols = Object.keys(rows[0] || {}).filter((k) => isPrimitive(rows[0][k])).slice(0, 6);
+  const cols = Object.keys(rows[0] || {})
+    .filter((k) => isPrimitive(rows[0][k]))
+    .slice(0, 6);
+
   if (cols.length === 0) return null;
+
   return (
     <div className="card overflow-hidden p-0">
-      <h3 className="px-6 pt-6 text-lg font-bold">{title}</h3>
+      <h3 className="px-6 pt-6 text-lg font-bold">
+        {title}
+      </h3>
+
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[520px] text-left text-sm">
           <thead className="border-y border-[#E6EBF2] bg-[#F8FAFC] text-[#64748B]">
-            <tr>{cols.map((c) => <th key={c} className="px-6 py-3 font-semibold">{humanize(c)}</th>)}</tr>
+            <tr>
+              {cols.map((c) => (
+                <th
+                  key={c}
+                  className="px-6 py-3 font-semibold"
+                >
+                  {humanize(c)}
+                </th>
+              ))}
+            </tr>
           </thead>
+
           <tbody>
             {rows.map((r, i) => (
-              <tr key={i} className="border-b border-[#E6EBF2] last:border-0 hover:bg-[#F4F8FF]">
-                {cols.map((c) => <td key={c} className="px-6 py-3">{r[c] == null ? '—' : typeof r[c] === 'number' ? fmtVal(r[c]) : r[c]}</td>)}
+              <tr
+                key={i}
+                className="border-b border-[#E6EBF2] last:border-0 hover:bg-[#F4F8FF]"
+              >
+                {cols.map((c) => (
+                  <td
+                    key={c}
+                    className="px-6 py-3"
+                  >
+                    {r[c] == null
+                      ? '—'
+                      : typeof r[c] === 'number'
+                        ? fmtVal(r[c])
+                        : r[c]}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
@@ -32,57 +75,200 @@ function DataTable({ title, rows }) {
 }
 
 export default function Improvements() {
+  const navigate = useNavigate();
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let alive = true;
+
     getImprovementsAnalytics()
-      .then((res) => alive && setData(unwrap(res)))
-      .catch(() => alive && setError('Could not load improvement analytics.'))
-      .finally(() => alive && setLoading(false));
-    return () => { alive = false; };
+      .then((res) => {
+        if (alive) {
+          setData(unwrap(res));
+        }
+      })
+      .catch(() => {
+        if (alive) {
+          setError(
+            'Could not load improvement analytics.'
+          );
+        }
+      })
+      .finally(() => {
+        if (alive) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  const entries = Object.entries(data && typeof data === 'object' && !Array.isArray(data) ? data : { improvements: data || [] });
-  const tiles = entries.filter(([, v]) => isPrimitive(v));
-  const groups = entries.filter(([, v]) => v && typeof v === 'object');
+  const entries = Object.entries(
+    data &&
+      typeof data === 'object' &&
+      !Array.isArray(data)
+      ? data
+      : { improvements: data || [] }
+  );
+
+  const tiles = entries.filter(([, v]) =>
+    isPrimitive(v)
+  );
+
+  const groups = entries.filter(
+    ([, v]) => v && typeof v === 'object'
+  );
+
+  /*
+   * Tile navigation
+   *
+   * Improved Students -> Students page filtered by improved
+   * Not Improved -> Students page filtered by attention
+   * Other aggregate metrics -> All Students
+   */
+  const getTileAction = (label) => {
+    const normalizedLabel = label
+      .toLowerCase()
+      .replace(/_/g, ' ');
+
+    if (
+      normalizedLabel.includes('improved') &&
+      !normalizedLabel.includes('not')
+    ) {
+      return () => navigate('/students?filter=improved');
+    }
+
+    if (
+      normalizedLabel.includes('not improved') ||
+      normalizedLabel.includes('no improvement') ||
+      normalizedLabel.includes('attention')
+    ) {
+      return () => navigate('/students?filter=attention');
+    }
+
+    return () => navigate('/students?filter=all');
+  };
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 pb-28 sm:p-6 md:pb-8 lg:p-8">
+
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Improvements</h1>
-        <p className="mt-1 text-[#64748B]">See how students are progressing over time.</p>
+        <h1 className="text-3xl font-extrabold tracking-tight">
+          Improvements
+        </h1>
+
+        <p className="mt-1 text-[#64748B]">
+          See how students are progressing over time.
+        </p>
       </div>
 
-      {error && <div className="rounded-2xl border border-[#E63946]/30 bg-[#FDECEE] px-4 py-3 text-sm text-[#B91C1C]">{error}</div>}
+      {/* Error */}
+      {error && (
+        <div className="rounded-2xl border border-[#E63946]/30 bg-[#FDECEE] px-4 py-3 text-sm text-[#B91C1C]">
+          {error}
+        </div>
+      )}
 
       {loading ? (
+        /* Loading */
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => <StatCard key={i} loading label="Loading" icon={TrendingUp} />)}
+          {[0, 1, 2, 3].map((i) => (
+            <StatCard
+              key={i}
+              loading
+              label="Loading"
+              icon={TrendingUp}
+            />
+          ))}
         </div>
       ) : (
         <>
+          {/* Improvement Tiles */}
           {tiles.length > 0 && (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {tiles.map(([k, v], i) => (
-                <StatCard key={k} label={humanize(k)} value={fmtVal(v)} icon={TrendingUp} tone={TONE_CYCLE[i % 4]} />
-              ))}
+              {tiles.map(([k, v], i) => {
+                const label = humanize(k);
+                const handleClick =
+                  getTileAction(label);
+
+                return (
+                  <button
+                    type="button"
+                    key={k}
+                    onClick={handleClick}
+                    className="text-left transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40"
+                  >
+                    <StatCard
+                      label={label}
+                      value={fmtVal(v)}
+                      icon={TrendingUp}
+                      tone={
+                        TONE_CYCLE[
+                          i % TONE_CYCLE.length
+                        ]
+                      }
+                    />
+                  </button>
+                );
+              })}
             </div>
           )}
+
+          {/* Analytics Groups */}
           <div className="grid gap-6 lg:grid-cols-2">
             {groups.map(([k, v]) => {
               const pairs = toPairs(v);
-              if (pairs.length > 0) return <BeltChart key={k} title={humanize(k)} data={pairs} colorByBelt={false} />;
-              if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'object')
-                return <div key={k} className="lg:col-span-2"><DataTable title={humanize(k)} rows={v} /></div>;
+
+              if (pairs.length > 0) {
+                return (
+                  <BeltChart
+                    key={k}
+                    title={humanize(k)}
+                    data={pairs}
+                    colorByBelt={false}
+                  />
+                );
+              }
+
+              if (
+                Array.isArray(v) &&
+                v.length > 0 &&
+                typeof v[0] === 'object'
+              ) {
+                return (
+                  <div
+                    key={k}
+                    className="lg:col-span-2"
+                  >
+                    <DataTable
+                      title={humanize(k)}
+                      rows={v}
+                    />
+                  </div>
+                );
+              }
+
               return null;
             })}
           </div>
-          {!error && tiles.length === 0 && groups.every(([, v]) => !v || v.length === 0) && (
-            <div className="card py-14 text-center text-sm text-[#64748B]">No improvement data yet. Upload dojo data to see trends.</div>
-          )}
+
+          {/* Empty State */}
+          {!error &&
+            tiles.length === 0 &&
+            groups.every(
+              ([, v]) => !v || v.length === 0
+            ) && (
+              <div className="card py-14 text-center text-sm text-[#64748B]">
+                No improvement data yet. Upload dojo data
+                to see trends.
+              </div>
+            )}
         </>
       )}
     </div>
