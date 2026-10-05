@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import {
   LayoutDashboard,
   Users,
@@ -7,7 +5,7 @@ import {
   Upload,
   User,
   ArrowLeft,
-  Menu,
+  MoreVertical
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -39,31 +37,29 @@ const menu = [
   }
 ];
 
-export default function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
-
+export default function Sidebar({ collapsed, setCollapsed }) {
   return (
     <>
       {/* Desktop Sidebar */}
       <aside
-      className={`fixed left-0 top-0 z-40 h-screen
-        ${collapsed ? 'w-20' : 'w-64'}
-        transition-all duration-300`}
+        className={`fixed left-0 top-0 z-40 hidden h-screen shrink-0 border-r border-[#E6EBF2] bg-[#07142D] p-4 transition-all duration-300 lg:block ${
+          collapsed ? "w-20" : "w-64"
+        }`}
+      >
+        {/* Collapse button */}
+        <button
+          type="button"
+          onClick={() => setCollapsed((value) => !value)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="mb-4 flex w-full items-center justify-center rounded-xl border border-slate-700 bg-[#0F172A] py-2 text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
         >
-         {/* Collapse button */}
-         <button
-         type="button"
-         onClick={() => setCollapsed((value) => !value)}
-         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-         className="mb-4 flex w-full items-center justify-center rounded-xl border border-slate-700 bg-[#0F172A] py-2 text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
-         >
           {collapsed ? (
-            <Menu size={22} />
+            <MoreVertical size={22} />
           ) : (
-          <ArrowLeft size={22} />
+            <ArrowLeft size={22} />
           )}
-          </button>
-          
+        </button>
+
         {!collapsed && (
           <p className="mb-4 text-xs uppercase tracking-wider text-slate-500">
             Menu
@@ -100,7 +96,7 @@ export default function Sidebar() {
             );
           })}
         </nav>
-       </aside>
+      </aside>
 
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#E6EBF2] bg-white lg:hidden">
