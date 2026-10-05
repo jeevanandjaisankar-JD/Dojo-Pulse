@@ -6,8 +6,8 @@ import {
   TrendingUp,
   Upload,
   User,
-  Menu,
-  MoreHorizontal
+  ArrowLeft,
+  Morevertical
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -58,9 +58,9 @@ export default function Sidebar() {
          className="mb-4 flex w-full items-center justify-center rounded-xl border border-slate-700 bg-[#0F172A] py-2 text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
          >
           {collapsed ? (
-            <MoreHorizontal size={22} />
+            <Morevertical size={22} />
           ) : (
-          <Menu size={22} />
+          <ArrowLeft size={22} />
           )}
           </button>
           
