@@ -7,7 +7,7 @@ import {
   Upload,
   User,
   ArrowLeft,
-  MoreVertical
+  Menu,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -46,10 +46,10 @@ export default function Sidebar() {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden min-h-screen shrink-0 border-r border-[#E6EBF2] bg-[#07142D] p-4 transition-all duration-300 lg:block ${
-          collapsed ? "w-20" : "w-64"
-        }`}
-      >
+      className={`fixed left-0 top-0 z-40 h-screen
+        ${collapsed ? 'w-20' : 'w-64'}
+        transition-all duration-300`}
+        >
          {/* Collapse button */}
          <button
          type="button"
@@ -58,7 +58,7 @@ export default function Sidebar() {
          className="mb-4 flex w-full items-center justify-center rounded-xl border border-slate-700 bg-[#0F172A] py-2 text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
          >
           {collapsed ? (
-            <MoreVertical size={22} />
+            <Menu size={22} />
           ) : (
           <ArrowLeft size={22} />
           )}
