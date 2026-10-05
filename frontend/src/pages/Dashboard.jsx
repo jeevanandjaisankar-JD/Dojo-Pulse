@@ -87,39 +87,43 @@ export default function Dashboard() {
       getImprovementsAnalytics(),
       getUploadHistory(),
       getMentorProfile(),
-    ]).then(([statsResult, improvementsResult, historyResult, mentorResult]) => {
-      if (!alive) return;
+    ]).then(
+      ([statsResult, improvementsResult, historyResult, mentorResult]) => {
+        if (!alive) return;
 
-      if (statsResult.status === 'fulfilled') {
-        const dashboardData = unwrap(statsResult.value);
-        setStats(dashboardData?.stats ?? dashboardData);
-      } else {
-        setError('Could not load dashboard stats.');
+        if (statsResult.status === 'fulfilled') {
+          const dashboardData = unwrap(statsResult.value);
+          setStats(dashboardData?.stats ?? dashboardData);
+        } else {
+          setError('Could not load dashboard stats.');
+        }
+
+        if (improvementsResult.status === 'fulfilled') {
+          const improvementsData = unwrap(improvementsResult.value);
+          setImprovements(
+            improvementsData?.data ?? improvementsData
+          );
+        } else {
+          setError('Could not load improvements analytics.');
+        }
+
+        if (historyResult.status === 'fulfilled') {
+          setHistory(
+            toList(historyResult.value, 'history', 'uploads')
+          );
+        } else {
+          setError('Could not load upload history.');
+        }
+
+        if (mentorResult.status === 'fulfilled') {
+          setMentor(unwrap(mentorResult.value));
+        } else {
+          setError('Could not load mentor profile.');
+        }
+
+        setLoading(false);
       }
-
-      if (improvementsResult.status === 'fulfilled') {
-        const improvementsData = unwrap(improvementsResult.value);
-        setImprovements(improvementsData?.data ?? improvementsData);
-      } else {
-        setError('Could not load improvements analytics.');
-      }
-
-      if (historyResult.status === 'fulfilled') {
-        setHistory(
-          toList(historyResult.value, 'history', 'uploads')
-        );
-      } else {
-        setError('Could not load upload history.');
-      }
-
-      if (mentorResult.status === 'fulfilled') {
-        setMentor(unwrap(mentorResult.value));
-      } else {
-        setError('Could not load mentor profile.');
-      }
-
-      setLoading(false);
-    });
+    );
 
     return () => {
       alive = false;
@@ -196,18 +200,22 @@ export default function Dashboard() {
     {
       label: 'Improved Students',
       value: improvements?.improvedCount ?? 0,
+      to: '/students?filter=improved',
     },
     {
       label: 'Not Improved',
       value: improvements?.notImprovedCount ?? 0,
+      to: '/students?filter=attention',
     },
     {
       label: 'Improvement Rate',
       value: `${improvements?.improvementRate ?? 0}%`,
+      to: '/students?filter=all',
     },
     {
       label: 'Belts Earned',
       value: improvements?.totalBeltsEarned ?? 0,
+      to: '/students?filter=all',
     },
   ];
 
@@ -461,9 +469,10 @@ export default function Dashboard() {
             <>
               <div className="mt-5 grid grid-cols-2 gap-3">
                 {improvementTiles.map((item) => (
-                  <div
+                  <Link
                     key={item.label}
-                    className="rounded-2xl border border-[#E6EBF2] bg-[#F8FAFC] p-4"
+                    to={item.to}
+                    className="block rounded-2xl border border-[#E6EBF2] bg-[#F8FAFC] p-4 transition hover:bg-white hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40"
                   >
                     <p className="text-xs text-[#64748B]">
                       {item.label}
@@ -472,7 +481,7 @@ export default function Dashboard() {
                     <p className="mt-1 text-2xl font-extrabold">
                       {item.value}
                     </p>
-                  </div>
+                  </Link>
                 ))}
               </div>
 
