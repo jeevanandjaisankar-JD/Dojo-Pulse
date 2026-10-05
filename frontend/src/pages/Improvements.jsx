@@ -1,16 +1,79 @@
-// Improvements.jsx
-
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { TrendingUp } from 'lucide-react';
+
+import { getImprovementsAnalytics } from '../services/api';
+
+import {
+  unwrap,
+  toPairs,
+  humanize,
+  fmtVal,
+} from '../components/StatCard';
 
 import StatCard from '../components/StatCard';
-import {
-  getImprovementsAnalytics,
-} from '../services/api';
+import BeltChart from '../components/BeltChart';
 
-const unwrap = (response) =>
-  response?.data ??
-  response;
+const TONE_CYCLE = ['blue', 'green', 'amber', 'red'];
+
+const isPrimitive = (v) =>
+  typeof v === 'number' ||
+  (typeof v === 'string' && v.length < 24);
+
+function DataTable({ title, rows }) {
+  const cols = Object.keys(rows[0] || {})
+    .filter((k) => isPrimitive(rows[0][k]))
+    .slice(0, 6);
+
+  if (cols.length === 0) return null;
+
+  return (
+    <div className="card overflow-hidden p-0">
+      <h3 className="px-6 pt-6 text-lg font-bold">
+        {title}
+      </h3>
+
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full min-w-[520px] text-left text-sm">
+          <thead className="border-y border-[#E6EBF2] bg-[#F8FAFC] text-[#64748B]">
+            <tr>
+              {cols.map((c) => (
+                <th
+                  key={c}
+                  className="px-6 py-3 font-semibold"
+                >
+                  {humanize(c)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {rows.map((r, i) => (
+              <tr
+                key={i}
+                className="border-b border-[#E6EBF2] last:border-0 hover:bg-[#F4F8FF]"
+              >
+                {cols.map((c) => (
+                  <td
+                    key={c}
+                    className="px-6 py-3"
+                  >
+                    {r[c] == null
+                      ? '—'
+                      : typeof r[c] === 'number'
+                        ? fmtVal(r[c])
+                        : r[c]}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 const getTileRoute = (label) => {
   const normalized = String(label)
@@ -35,7 +98,7 @@ const getTileRoute = (label) => {
   return '/students?filter=all';
 };
 
-const Improvements = () => {
+export default function Improvements() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -43,196 +106,163 @@ const Improvements = () => {
   useEffect(() => {
     let alive = true;
 
-    const loadAnalytics = async () => {
-      setLoading(true);
-      setError('');
-
-      try {
-        const response =
-          await getImprovementsAnalytics();
-
+    getImprovementsAnalytics()
+      .then((res) => {
         if (!alive) return;
 
-        const result = unwrap(response);
+        const response = unwrap(res);
 
         setData(
-          result?.data ??
-          result
+          response?.data ??
+          response
         );
-      } catch (err) {
-        console.error(
-          'Failed to load improvements analytics:',
-          err
-        );
-
+      })
+      .catch(() => {
         if (alive) {
           setError(
-            'Could not load improvements analytics.'
+            'Could not load improvement analytics.'
           );
         }
-      } finally {
+      })
+      .finally(() => {
         if (alive) {
           setLoading(false);
         }
-      }
-    };
-
-    loadAnalytics();
+      });
 
     return () => {
       alive = false;
     };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-[300px] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#E2E8F0] border-t-[#2563EB]" />
-      </div>
-    );
-  }
+  const entries = Object.entries(
+    data &&
+      typeof data === 'object' &&
+      !Array.isArray(data)
+      ? data
+      : { improvements: data || [] }
+  );
 
-  const tiles = [
-    {
-      key: 'Improved Students',
-      value: data?.improvedCount ?? 0,
-    },
-    {
-      key: 'Not Improved',
-      value: data?.notImprovedCount ?? 0,
-    },
-    {
-      key: 'Improvement Rate',
-      value: `${data?.improvementRate ?? 0}%`,
-    },
-    {
-      key: 'Total Slots Happened',
-      value: data?.totalSlotsHappened ?? 0,
-    },
-    {
-      key: 'Total Belts Earned',
-      value: data?.totalBeltsEarned ?? 0,
-    },
-    {
-      key: 'Total Students',
-      value: data?.totalStudents ?? 0,
-    },
-  ];
+  const tiles = entries.filter(([, v]) =>
+    isPrimitive(v)
+  );
+
+  const groups = entries.filter(
+    ([, v]) =>
+      v &&
+      typeof v === 'object'
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 p-4 pb-28 sm:p-6 md:pb-8 lg:p-8">
+
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-[#0F172A]">
+        <h1 className="text-3xl font-extrabold tracking-tight">
           Improvements
         </h1>
 
-        <p className="mt-1 text-sm text-[#64748B]">
-          Track student improvement and progress analytics.
+        <p className="mt-1 text-[#64748B]">
+          See how students are progressing over time.
         </p>
       </div>
 
+      {/* Error */}
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+        <div className="rounded-2xl border border-[#E63946]/30 bg-[#FDECEE] px-4 py-3 text-sm text-[#B91C1C]">
           {error}
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {tiles.map((tile) => (
-          <Link
-            key={tile.key}
-            to={getTileRoute(tile.key)}
-            className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40"
-          >
+      {/* Analytics */}
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
             <StatCard
-              label={tile.key}
-              value={tile.value}
+              key={i}
+              loading
+              label="Loading"
+              icon={TrendingUp}
             />
-          </Link>
-        ))}
-      </div>
-
-      {/* Languages */}
-      {data?.languages && (
-        <div className="rounded-2xl border border-[#E6EBF2] bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-[#0F172A]">
-            Languages
-          </h2>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {Object.entries(data.languages).map(
-              ([language, count]) => (
-                <div
-                  key={language}
-                  className="rounded-xl bg-[#F8FAFC] p-4"
-                >
-                  <p className="text-sm font-medium text-[#64748B]">
-                    {language}
-                  </p>
-
-                  <p className="mt-1 text-xl font-bold text-[#0F172A]">
-                    {count}
-                  </p>
-                </div>
-              )
-            )}
-          </div>
+          ))}
         </div>
-      )}
-
-      {/* Timeline */}
-      {Array.isArray(data?.timelineProgress) &&
-        data.timelineProgress.length > 0 && (
-          <div className="rounded-2xl border border-[#E6EBF2] bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-bold text-[#0F172A]">
-              Progress Timeline
-            </h2>
-
-            <div className="mt-4 overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b border-[#E6EBF2]">
-                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[#64748B]">
-                      Period
-                    </th>
-
-                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[#64748B]">
-                      Slots Attempted
-                    </th>
-
-                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[#64748B]">
-                      Belts Earned
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-[#E6EBF2]">
-                  {data.timelineProgress.map(
-                    (item, index) => (
-                      <tr key={item.period ?? index}>
-                        <td className="px-4 py-3 text-sm font-semibold text-[#0F172A]">
-                          {item.period ??
-                            item.month ??
-                            '—'}
-                        </td>
-
-                        <td className="px-4 py-3 text-sm text-[#475569]">
-                          {item.slotsAttempted ?? 0}
-                        </td>
-
-                        <td className="px-4 py-3 text-sm text-[#475569]">
-                          {item.beltsEarned ?? 0}
-                        </td>
-                      </tr>
-                    )
-                  )}
-                </tbody>
-              </table>
+      ) : (
+        <>
+          {/* KPI Tiles */}
+          {tiles.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {tiles.map(([key, value], index) => (
+                <Link
+                  key={key}
+                  to={getTileRoute(key)}
+                  className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40"
+                >
+                  <StatCard
+                    label={humanize(key)}
+                    value={fmtVal(value)}
+                    icon={TrendingUp}
+                    tone={
+                      TONE_CYCLE[
+                        index % TONE_CYCLE.length
+                      ]
+                    }
+                  />
+                </Link>
+              ))}
             </div>
+          )}
+
+          {/* Grouped analytics */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {groups.map(([key, value]) => {
+              const pairs = toPairs(value);
+
+              if (pairs.length > 0) {
+                return (
+                  <BeltChart
+                    key={key}
+                    title={humanize(key)}
+                    data={pairs}
+                    colorByBelt={false}
+                  />
+                );
+              }
+
+              if (
+                Array.isArray(value) &&
+                value.length > 0 &&
+                typeof value[0] === 'object'
+              ) {
+                return (
+                  <div
+                    key={key}
+                    className="lg:col-span-2"
+                  >
+                    <DataTable
+                      title={humanize(key)}
+                      rows={value}
+                    />
+                  </div>
+                );
+              }
+
+              return null;
+            })}
           </div>
-        )}
+
+          {!error &&
+            tiles.length === 0 &&
+            groups.every(
+              ([, value]) =>
+                !value ||
+                value.length === 0
+            ) && (
+              <div className="card py-14 text-center text-sm text-[#64748B]">
+                No improvement data yet. Upload dojo data to see trends.
+              </div>
+            )}
+        </>
+      )}
     </div>
   );
-};
-
-export default Improvements;
+}

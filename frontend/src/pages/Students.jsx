@@ -1,8 +1,22 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Users, Eye } from 'lucide-react';
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+
+import {
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
+
+import {
+  Search,
+  Users,
+  Eye,
+} from 'lucide-react';
 
 import { getStudents } from '../services/api';
+
 import { toList } from '../components/StatCard';
 import { BeltBadge } from '../components/BeltChart';
 
@@ -49,36 +63,48 @@ const slanguages = (student) => {
 
   const language = slang(student);
 
-  return language ? [language] : [];
+  return language
+    ? [language]
+    : [];
 };
 
 const isimproved = (student) =>
   student.improvementStatus === 'IMPROVED';
 
-const Students = () => {
+export default function Students() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [
+    searchParams,
+    setSearchParams,
+  ] = useSearchParams();
 
-  const [query, setQuery] = useState('');
+  const [students, setStudents] =
+    useState([]);
 
-  const initialFilter = searchParams.get('filter') || 'all';
-  const [filter, setFilter] = useState(initialFilter);
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState('');
+
+  const [query, setQuery] =
+    useState('');
+
+  const initialFilter =
+    searchParams.get('filter') ||
+    'all';
+
+  const [filter, setFilter] =
+    useState(initialFilter);
 
   /*
-   * Keep the filter synchronized with the URL.
-   *
-   * Examples:
-   * /students?filter=improved
-   * /students?filter=attention
-   * /students?filter=squad138
-   * /students?filter=python
+   * Keep filter synchronized with URL.
    */
   useEffect(() => {
-    const urlFilter = searchParams.get('filter') || 'all';
+    const urlFilter =
+      searchParams.get('filter') ||
+      'all';
 
     if (urlFilter !== filter) {
       setFilter(urlFilter);
@@ -87,10 +113,6 @@ const Students = () => {
 
   /*
    * Load students.
-   *
-   * IMPORTANT:
-   * getStudents() already returns res.data from api.js.
-   * Therefore we use toList() directly on the returned value.
    */
   useEffect(() => {
     let alive = true;
@@ -102,15 +124,25 @@ const Students = () => {
       .then((res) => {
         if (!alive) return;
 
-        const list = toList(res, 'students');
+        const list =
+          toList(res, 'students');
 
-        setStudents(Array.isArray(list) ? list : []);
+        setStudents(
+          Array.isArray(list)
+            ? list
+            : []
+        );
       })
       .catch((err) => {
-        console.error('Failed to load students:', err);
+        console.error(
+          'Failed to load students:',
+          err
+        );
 
         if (alive) {
-          setError('Could not load students. Please try again.');
+          setError(
+            'Could not load students. Please try again.'
+          );
         }
       })
       .finally(() => {
@@ -125,120 +157,186 @@ const Students = () => {
   }, []);
 
   /*
-   * Collect all available languages dynamically.
+   * Collect all available languages.
    */
   const languages = useMemo(() => {
-    const values = students.flatMap((student) =>
-      slanguages(student)
-    );
+    const values =
+      students.flatMap((student) =>
+        slanguages(student)
+      );
 
-    return [...new Set(values)]
+    return [
+      ...new Set(values),
+    ]
       .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b));
+      .sort((a, b) =>
+        a.localeCompare(b)
+      );
   }, [students]);
 
   /*
-   * Apply search + selected filter.
+   * Apply search + filter.
    */
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q =
+      query
+        .trim()
+        .toLowerCase();
 
-    return students.filter((student) => {
-      const name = sname(student).toLowerCase();
-      const id = String(sid(student) ?? '').toLowerCase();
-      const email = semail(student).toLowerCase();
+    return students.filter(
+      (student) => {
+        const name =
+          sname(student)
+            .toLowerCase();
 
-      const matchesSearch =
-        !q ||
-        name.includes(q) ||
-        id.includes(q) ||
-        email.includes(q);
+        const id =
+          String(
+            sid(student) ?? ''
+          ).toLowerCase();
 
-      if (!matchesSearch) {
-        return false;
-      }
+        const email =
+          semail(student)
+            .toLowerCase();
 
-      switch (filter) {
-        case 'improved':
-          return isimproved(student);
+        const matchesSearch =
+          !q ||
+          name.includes(q) ||
+          id.includes(q) ||
+          email.includes(q);
 
-        case 'attention':
-          return !isimproved(student);
+        if (!matchesSearch) {
+          return false;
+        }
 
-        case 'squad138':
-          return sbatch(student)
-            .toLowerCase()
-            .includes('138');
+        switch (filter) {
+          case 'improved':
+            return isimproved(student);
 
-        case 'squad139':
-          return sbatch(student)
-            .toLowerCase()
-            .includes('139');
+          case 'attention':
+            return !isimproved(student);
 
-        case 'python':
-          return slanguages(student).some(
-            (language) =>
-              language.toLowerCase() === 'python'
-          );
+          case 'squad138':
+            return sbatch(student)
+              .toLowerCase()
+              .includes('138');
 
-        case 'nodejs':
-          return slanguages(student).some((language) =>
-            ['node.js', 'nodejs', 'node'].includes(
-              language.toLowerCase()
-            )
-          );
+          case 'squad139':
+            return sbatch(student)
+              .toLowerCase()
+              .includes('139');
 
-        case 'java':
-          return slanguages(student).some(
-            (language) =>
-              language.toLowerCase() === 'java'
-          );
-
-        case 'cpp':
-          return slanguages(student).some((language) =>
-            ['c++', 'cpp', 'c plus plus'].includes(
-              language.toLowerCase()
-            )
-          );
-
-        default:
-          /*
-           * Support dynamically generated language filters.
-           * Example:
-           * filter=language:JavaScript
-           */
-          if (filter.startsWith('language:')) {
-            const selectedLanguage = filter
-              .slice('language:'.length)
-              .toLowerCase();
-
-            return slanguages(student).some(
+          case 'python':
+            return slanguages(
+              student
+            ).some(
               (language) =>
-                language.toLowerCase() === selectedLanguage
+                language
+                  .toLowerCase() ===
+                'python'
             );
-          }
 
-          return true;
+          case 'nodejs':
+            return slanguages(
+              student
+            ).some((language) =>
+              [
+                'node.js',
+                'nodejs',
+                'node',
+              ].includes(
+                language.toLowerCase()
+              )
+            );
+
+          case 'java':
+            return slanguages(
+              student
+            ).some(
+              (language) =>
+                language
+                  .toLowerCase() ===
+                'java'
+            );
+
+          case 'cpp':
+            return slanguages(
+              student
+            ).some((language) =>
+              [
+                'c++',
+                'cpp',
+                'c plus plus',
+              ].includes(
+                language.toLowerCase()
+              )
+            );
+
+          default:
+            /*
+             * Dynamic language filters.
+             *
+             * Example:
+             * filter=language:JavaScript
+             */
+            if (
+              filter.startsWith(
+                'language:'
+              )
+            ) {
+              const selectedLanguage =
+                filter
+                  .slice(
+                    'language:'.length
+                  )
+                  .toLowerCase();
+
+              return slanguages(
+                student
+              ).some(
+                (language) =>
+                  language
+                    .toLowerCase() ===
+                  selectedLanguage
+              );
+            }
+
+            return true;
+        }
       }
-    });
-  }, [students, query, filter]);
+    );
+  }, [
+    students,
+    query,
+    filter,
+  ]);
 
   /*
    * Change filter and update URL.
    */
-  const handleFilterChange = (value) => {
-    setFilter(value);
+  const handleFilterChange =
+    (value) => {
+      setFilter(value);
 
-    const nextParams = new URLSearchParams(searchParams);
+      const nextParams =
+        new URLSearchParams(
+          searchParams
+        );
 
-    if (value === 'all') {
-      nextParams.delete('filter');
-    } else {
-      nextParams.set('filter', value);
-    }
+      if (value === 'all') {
+        nextParams.delete(
+          'filter'
+        );
+      } else {
+        nextParams.set(
+          'filter',
+          value
+        );
+      }
 
-    setSearchParams(nextParams);
-  };
+      setSearchParams(
+        nextParams
+      );
+    };
 
   /*
    * Clear search + filter.
@@ -252,15 +350,18 @@ const Students = () => {
   /*
    * Open student details.
    */
-  const handleStudentClick = (student) => {
-    const id = sid(student);
+  const handleStudentClick =
+    (student) => {
+      const id = sid(student);
 
-    if (!id) {
-      return;
-    }
+      if (!id) {
+        return;
+      }
 
-    navigate(`/students/${id}`);
-  };
+      navigate(
+        `/students/${id}`
+      );
+    };
 
   return (
     <div className="space-y-6">
@@ -302,7 +403,9 @@ const Students = () => {
               type="text"
               value={query}
               onChange={(event) =>
-                setQuery(event.target.value)
+                setQuery(
+                  event.target.value
+                )
               }
               placeholder="Search by name, ID or email..."
               className="input-base w-full pl-10"
@@ -311,11 +414,12 @@ const Students = () => {
 
           {/* Filter */}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-
             <select
               value={filter}
               onChange={(event) =>
-                handleFilterChange(event.target.value)
+                handleFilterChange(
+                  event.target.value
+                )
               }
               aria-label="Filter students"
               className="input-base w-full sm:w-64"
@@ -370,7 +474,9 @@ const Students = () => {
                     'c++',
                     'cpp',
                     'c plus plus',
-                  ].includes(normalized);
+                  ].includes(
+                    normalized
+                  );
                 })
                 .map((language) => (
                   <option
@@ -382,10 +488,13 @@ const Students = () => {
                 ))}
             </select>
 
-            {(query || filter !== 'all') && (
+            {(query ||
+              filter !== 'all') && (
               <button
                 type="button"
-                onClick={clearFilters}
+                onClick={
+                  clearFilters
+                }
                 className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[#64748B] transition hover:bg-[#F1F5F9] hover:text-[#0F172A]"
               >
                 Clear
@@ -436,7 +545,6 @@ const Students = () => {
 
         /* Empty State */
         <div className="rounded-2xl border border-[#E6EBF2] bg-white p-12 text-center shadow-sm">
-
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F5F9]">
             <Users
               size={25}
@@ -453,10 +561,13 @@ const Students = () => {
             filter.
           </p>
 
-          {(query || filter !== 'all') && (
+          {(query ||
+            filter !== 'all') && (
             <button
               type="button"
-              onClick={clearFilters}
+              onClick={
+                clearFilters
+              }
               className="mt-5 rounded-xl bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1D4ED8]"
             >
               Clear filters
@@ -468,7 +579,6 @@ const Students = () => {
 
         /* Students Table */
         <div className="overflow-hidden rounded-2xl border border-[#E6EBF2] bg-white shadow-sm">
-
           <div className="overflow-x-auto">
             <table className="min-w-full">
 
@@ -507,137 +617,163 @@ const Students = () => {
               </thead>
 
               <tbody className="divide-y divide-[#E6EBF2]">
+                {filtered.map(
+                  (student) => {
+                    const id =
+                      sid(student);
 
-                {filtered.map((student) => {
-                  const id = sid(student);
-                  const name = sname(student);
-                  const email = semail(student);
-                  const belt = sbelt(student);
-                  const batch = sbatch(student);
+                    const name =
+                      sname(student);
 
-                  const studentLanguages =
-                    slanguages(student);
+                    const email =
+                      semail(student);
 
-                  const improved =
-                    isimproved(student);
+                    const belt =
+                      sbelt(student);
 
-                  return (
-                    <tr
-                      key={id ?? `${name}-${email}`}
-                      onClick={() =>
-                        handleStudentClick(student)
-                      }
-                      className="cursor-pointer transition hover:bg-[#F8FAFC]"
-                    >
+                    const batch =
+                      sbatch(student);
 
-                      {/* Student */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
+                    const studentLanguages =
+                      slanguages(
+                        student
+                      );
 
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EFF6FF] text-sm font-bold text-[#2563EB]">
-                            {name
-                              .charAt(0)
-                              .toUpperCase()}
-                          </div>
+                    const improved =
+                      isimproved(
+                        student
+                      );
 
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold text-[#0F172A]">
-                              {name}
-                            </p>
+                    return (
+                      <tr
+                        key={
+                          id ??
+                          `${name}-${email}`
+                        }
+                        onClick={() =>
+                          handleStudentClick(
+                            student
+                          )
+                        }
+                        className="cursor-pointer transition hover:bg-[#F8FAFC]"
+                      >
 
-                            {email && (
-                              <p className="mt-0.5 truncate text-xs text-[#64748B]">
-                                {email}
+                        {/* Student */}
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EFF6FF] text-sm font-bold text-[#2563EB]">
+                              {name
+                                .charAt(0)
+                                .toUpperCase()}
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-[#0F172A]">
+                                {name}
                               </p>
-                            )}
+
+                              {email && (
+                                <p className="mt-0.5 truncate text-xs text-[#64748B]">
+                                  {email}
+                                </p>
+                              )}
+                            </div>
+
                           </div>
+                        </td>
 
-                        </div>
-                      </td>
-
-                      {/* ID */}
-                      <td className="px-5 py-4">
-                        <span className="text-sm font-medium text-[#475569]">
-                          {id ?? '—'}
-                        </span>
-                      </td>
-
-                      {/* Language */}
-                      <td className="px-5 py-4">
-                        {studentLanguages.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {studentLanguages.map(
-                              (language) => (
-                                <span
-                                  key={language}
-                                  className="rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-semibold text-[#475569]"
-                                >
-                                  {language}
-                                </span>
-                              )
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-[#94A3B8]">
-                            —
+                        {/* ID */}
+                        <td className="px-5 py-4">
+                          <span className="text-sm font-medium text-[#475569]">
+                            {id ?? '—'}
                           </span>
-                        )}
-                      </td>
+                        </td>
 
-                      {/* Batch */}
-                      <td className="px-5 py-4">
-                        <span className="text-sm font-medium text-[#475569]">
-                          {batch || '—'}
-                        </span>
-                      </td>
+                        {/* Language */}
+                        <td className="px-5 py-4">
+                          {studentLanguages.length >
+                          0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {studentLanguages.map(
+                                (language) => (
+                                  <span
+                                    key={
+                                      language
+                                    }
+                                    className="rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-semibold text-[#475569]"
+                                  >
+                                    {language}
+                                  </span>
+                                )
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-[#94A3B8]">
+                              —
+                            </span>
+                          )}
+                        </td>
 
-                      {/* Belt */}
-                      <td className="px-5 py-4">
-                        {belt ? (
-                          <BeltBadge belt={belt} />
-                        ) : (
-                          <span className="text-sm text-[#94A3B8]">
-                            —
+                        {/* Batch */}
+                        <td className="px-5 py-4">
+                          <span className="text-sm font-medium text-[#475569]">
+                            {batch || '—'}
                           </span>
-                        )}
-                      </td>
+                        </td>
 
-                      {/* Status */}
-                      <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
-                            improved
-                              ? 'bg-emerald-50 text-emerald-700'
-                              : 'bg-amber-50 text-amber-700'
-                          }`}
-                        >
-                          {improved
-                            ? 'Improved'
-                            : 'Needs Attention'}
-                        </span>
-                      </td>
+                        {/* Belt */}
+                        <td className="px-5 py-4">
+                          {belt ? (
+                            <BeltBadge
+                              belt={belt}
+                            />
+                          ) : (
+                            <span className="text-sm text-[#94A3B8]">
+                              —
+                            </span>
+                          )}
+                        </td>
 
-                      {/* Action */}
-                      <td className="px-5 py-4 text-right">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleStudentClick(
-                              student
-                            );
-                          }}
-                          className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-[#2563EB] transition hover:bg-[#EFF6FF]"
-                        >
-                          <Eye size={16} />
-                          View
-                        </button>
-                      </td>
+                        {/* Status */}
+                        <td className="px-5 py-4">
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
+                              improved
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'bg-amber-50 text-amber-700'
+                            }`}
+                          >
+                            {improved
+                              ? 'Improved'
+                              : 'Needs Attention'}
+                          </span>
+                        </td>
 
-                    </tr>
-                  );
-                })}
+                        {/* Action */}
+                        <td className="px-5 py-4 text-right">
+                          <button
+                            type="button"
+                            onClick={(
+                              event
+                            ) => {
+                              event.stopPropagation();
 
+                              handleStudentClick(
+                                student
+                              );
+                            }}
+                            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-[#2563EB] transition hover:bg-[#EFF6FF]"
+                          >
+                            <Eye size={16} />
+                            View
+                          </button>
+                        </td>
+
+                      </tr>
+                    );
+                  }
+                )}
               </tbody>
             </table>
           </div>
@@ -645,6 +781,4 @@ const Students = () => {
       )}
     </div>
   );
-};
-
-export default Students;
+}
