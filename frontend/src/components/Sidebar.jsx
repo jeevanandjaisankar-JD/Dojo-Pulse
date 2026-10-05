@@ -6,8 +6,8 @@ import {
   TrendingUp,
   Upload,
   User,
-  Menu,
-  MoreHorizontal
+  ArrowLeft,
+  MoreVertical
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -58,9 +58,9 @@ export default function Sidebar() {
          className="mb-4 flex w-full items-center justify-center rounded-xl border border-slate-700 bg-[#0F172A] py-2 text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
          >
           {collapsed ? (
-            <MoreHorizontal size={22} />
+            <MoreVertical size={22} />
           ) : (
-          <Menu size={22} />
+          <ArrowLeft size={22} />
           )}
           </button>
           
@@ -100,20 +100,7 @@ export default function Sidebar() {
             );
           })}
         </nav>
-
-        <button
-          type="button"
-          onClick={() => setCollapsed((value) => !value)}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="mt-4 flex w-full items-center justify-center rounded-xl border border-slate-700 bg-[#0F172A] py-2 text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
-        >
-          {collapsed ? (
-            <ChevronRight size={18} />
-          ) : (
-            <ChevronLeft size={18} />
-          )}
-        </button>
-      </aside>
+       </aside>
 
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#E6EBF2] bg-white lg:hidden">
