@@ -7,7 +7,7 @@ import {
   Upload,
   User,
   ArrowLeft,
-  Morevertical
+  MoreVertical
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -58,7 +58,7 @@ export default function Sidebar() {
          className="mb-4 flex w-full items-center justify-center rounded-xl border border-slate-700 bg-[#0F172A] py-2 text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
          >
           {collapsed ? (
-            <Morevertical size={22} />
+            <MoreVertical size={22} />
           ) : (
           <ArrowLeft size={22} />
           )}
