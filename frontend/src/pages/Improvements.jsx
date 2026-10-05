@@ -143,14 +143,21 @@ export default function Improvements() {
       : { improvements: data || [] }
   );
 
-  const tiles = entries.filter(([, v]) =>
-    isPrimitive(v)
+  const tiles = entries.filter(([, value]) =>
+    isPrimitive(value)
   );
 
+  const timelineProgress = Array.isArray(
+    data?.timelineProgress
+  )
+    ? data.timelineProgress
+    : [];
+
   const groups = entries.filter(
-    ([, v]) =>
-      v &&
-      typeof v === 'object'
+    ([key, value]) =>
+      key !== 'timelineProgress' &&
+      value &&
+      typeof value === 'object'
   );
 
   return (
@@ -209,6 +216,16 @@ export default function Improvements() {
                   />
                 </Link>
               ))}
+            </div>
+          )}
+
+          {/* Timeline Progress */}
+          {timelineProgress.length > 0 && (
+            <div className="lg:col-span-2">
+              <DataTable
+                title="Timeline Progress"
+                rows={timelineProgress}
+              />
             </div>
           )}
 
