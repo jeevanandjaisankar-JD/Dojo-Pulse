@@ -42,9 +42,9 @@ export default function Sidebar({ collapsed, setCollapsed }) {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-40 hidden h-screen shrink-0 border-r border-[#E6EBF2] bg-[#07142D] p-4 transition-all duration-300 lg:block ${
-          collapsed ? "w-20" : "w-64"
-        }`}
+      className={`fixed left-0 top-16 z-40 hidden h-[calc(100vh-4rem)] shrink-0 border-r border-[#E6EBF2] bg-[#07142D] p-4 transition-all duration-300 lg:block ${
+        collapsed ? "w-20" : "w-64"
+      }`}
       >
         {/* Collapse button */}
         <button
