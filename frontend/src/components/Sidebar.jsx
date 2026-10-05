@@ -42,7 +42,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-40 hidden h-screen border-r border-[#D5D9E0] bg-[#e4e6eb] p-4 transition-all duration-300 lg:block ${
+        className={`fixed left-0 top-0 z-40 hidden h-screen border-r border-[#D5D9E0] bg-[#e4e6eb] px-4 pb-4 pt-20 transition-all duration-300 lg:block ${
           collapsed ? "w-20" : "w-64"
         }`}
       >
@@ -52,7 +52,9 @@ export default function Sidebar({ collapsed, setCollapsed }) {
           onClick={() => setCollapsed((value) => !value)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className={`mb-6 flex h-10 items-center rounded-xl border border-[#CDD1D8] bg-[#F1F2F5] text-[#334155] transition-all duration-200 hover:bg-[#D8DBE1] hover:text-[#0F172A] ${
-            collapsed ? "w-full justify-center" : "w-full justify-start px-3"
+            collapsed
+              ? "w-full justify-center"
+              : "w-full justify-start px-3"
           }`}
         >
           {collapsed ? (
@@ -124,7 +126,6 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 }
               >
                 <Icon size={20} />
-
                 <span>{item.name}</span>
               </NavLink>
             );
