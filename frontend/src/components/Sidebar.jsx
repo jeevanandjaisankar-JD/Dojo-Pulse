@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import {
   LayoutDashboard,
   Users,
@@ -7,7 +5,7 @@ import {
   Upload,
   User,
   ArrowLeft,
-  MoreVertical
+  Menu,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -39,37 +37,41 @@ const menu = [
   }
 ];
 
-export default function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
-
+export default function Sidebar({ collapsed, setCollapsed }) {
   return (
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden min-h-screen shrink-0 border-r border-[#E6EBF2] bg-[#07142D] p-4 transition-all duration-300 lg:block ${
+        className={`fixed left-0 top-0 z-40 hidden h-screen border-r border-[#D5D9E0] bg-[#e4e6eb] px-4 pb-4 pt-20 transition-all duration-300 lg:block ${
           collapsed ? "w-20" : "w-64"
         }`}
       >
-         {/* Collapse button */}
-         <button
-         type="button"
-         onClick={() => setCollapsed((value) => !value)}
-         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-         className="mb-4 flex w-full items-center justify-center rounded-xl border border-slate-700 bg-[#0F172A] py-2 text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
-         >
+        {/* Collapse Button */}
+        <button
+          type="button"
+          onClick={() => setCollapsed((value) => !value)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={`mb-6 flex h-10 items-center rounded-xl border border-[#CDD1D8] bg-[#F1F2F5] text-[#334155] transition-all duration-200 hover:bg-[#D8DBE1] hover:text-[#0F172A] ${
+            collapsed
+              ? "w-full justify-center"
+              : "w-full justify-start px-3"
+          }`}
+        >
           {collapsed ? (
-            <MoreVertical size={22} />
+            <Menu size={22} />
           ) : (
-          <ArrowLeft size={22} />
+            <ArrowLeft size={22} />
           )}
-          </button>
-          
+        </button>
+
+        {/* Menu Label */}
         {!collapsed && (
-          <p className="mb-4 text-xs uppercase tracking-wider text-slate-500">
+          <p className="mb-4 px-1 text-xs font-semibold uppercase tracking-wider text-[#64748B]">
             Menu
           </p>
         )}
 
+        {/* Navigation */}
         <nav className="space-y-2">
           {menu.map((item) => {
             const Icon = item.icon;
@@ -80,30 +82,32 @@ export default function Sidebar() {
                 to={item.path}
                 end={item.path === "/"}
                 className={({ isActive }) =>
-                  `flex items-center rounded-xl py-3 transition-all ${
+                  `flex items-center rounded-xl py-3 transition-all duration-200 ${
                     collapsed
                       ? "justify-center px-0"
                       : "gap-3 px-4"
                   } ${
                     isActive
-                      ? "bg-[#E63946] text-white"
-                      : "text-slate-300 hover:bg-slate-800"
+                      ? "bg-[#E63946] text-white shadow-sm"
+                      : "text-[#334155] hover:bg-[#D8DBE1]"
                   }`
                 }
               >
                 <Icon size={20} />
 
                 {!collapsed && (
-                  <span>{item.name}</span>
+                  <span className="font-medium">
+                    {item.name}
+                  </span>
                 )}
               </NavLink>
             );
           })}
         </nav>
-       </aside>
+      </aside>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#E6EBF2] bg-white lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#D5D9E0] bg-white lg:hidden">
         <div className="grid grid-cols-5">
           {menu.map((item) => {
             const Icon = item.icon;
@@ -117,7 +121,7 @@ export default function Sidebar() {
                   `flex flex-col items-center justify-center gap-1 py-3 text-[11px] transition-colors ${
                     isActive
                       ? "text-[#E63946]"
-                      : "text-slate-500 hover:text-slate-900"
+                      : "text-[#64748B] hover:text-[#0F172A]"
                   }`
                 }
               >
