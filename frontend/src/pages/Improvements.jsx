@@ -223,7 +223,7 @@ export default function Improvements() {
           {timelineProgress.length > 0 && (
             <div className="lg:col-span-2">
               <DataTable
-                title="Timeline Progress"
+                title="Monthly Improvement"
                 rows={timelineProgress}
               />
             </div>

@@ -28,40 +28,57 @@ const buildAnalytics = (students = []) => {
     for (const day of student.sameDayProgress || []) {
 
       /*
-       * Timeline aggregation
+       * Monthly improvement aggregation
        *
-       * Use the already calculated daily totals from sameDayProgress
-       * instead of counting individual attempts again.
+       * For every month:
+       * - Track unique students who improved in each language.
+       * - Track unique students who improved in at least one language.
+       *
+       * A student can count once for Python and once for Java,
+       * but only once in the monthly total.
        */
       const period = String(day.date || '').slice(0, 7);
 
       if (/^\d{4}-\d{2}$/.test(period)) {
         if (!periods.has(period)) {
           periods.set(period, {
-            slotsAttempted: 0,
-            beltsEarned: 0,
-            languages: {}
+            improvedStudentsByLanguage: {},
+            totalImprovedStudents: new Set()
           });
+
+          for (const language of BASE_LANGUAGES) {
+            periods.get(period).improvedStudentsByLanguage[language] =
+              new Set();
+          }
         }
 
         const periodStats = periods.get(period);
 
-        periodStats.slotsAttempted +=
-          Number(day.totalSlotsAttempted) || 0;
+        for (const attempt of day.attempts || []) {
+          if (!attempt.isImproved) {
+            continue;
+          }
 
-        periodStats.beltsEarned +=
-          Number(day.netBeltsEarned) || 0;
+          const language = attempt.language || 'Other';
+          const studentId = String(student.studentId);
 
-        for (const language of day.languages || []) {
-          periodStats.languages[language] =
-            (periodStats.languages[language] || 0) + 1;
+          if (!periodStats.improvedStudentsByLanguage[language]) {
+            periodStats.improvedStudentsByLanguage[language] =
+              new Set();
+          }
+
+          periodStats.improvedStudentsByLanguage[language].add(
+            studentId
+          );
+
+          periodStats.totalImprovedStudents.add(studentId);
         }
       }
 
       /*
        * Individual attempt analytics
        *
-       * These values are still used for language statistics
+       * These values are used for language statistics
        * and recent activity.
        */
       for (const attempt of day.attempts || []) {
@@ -151,8 +168,12 @@ const buildAnalytics = (students = []) => {
     );
 
   /*
-   * Convert monthly timeline data into the format
+   * Convert monthly improvement data into the format
    * consumed by the Improvements page.
+   *
+   * Output:
+   *
+   * Month | Python | Node.js | Java | C++ | Total Improvement
    */
   const timelineProgress = [...periods.entries()]
     .sort(
@@ -161,20 +182,19 @@ const buildAnalytics = (students = []) => {
     )
     .slice(0, 6)
     .map(([period, item]) => {
-
-      const topLanguage =
-        Object.entries(item.languages)
-          .sort(
-            ([, firstCount], [, secondCount]) =>
-              secondCount - firstCount
-          )[0]?.[0] || '—';
-
-      return {
-        period: formatPeriod(period),
-        slotsAttempted: item.slotsAttempted,
-        beltsEarned: item.beltsEarned,
-        topLanguage
+      const row = {
+        month: formatPeriod(period)
       };
+
+      for (const language of BASE_LANGUAGES) {
+        row[language] =
+          item.improvedStudentsByLanguage[language]?.size || 0;
+      }
+
+      row.totalImprovement =
+        item.totalImprovedStudents.size;
+
+      return row;
     });
 
   return {
