@@ -590,7 +590,7 @@ export default function Students() {
                   </th>
 
                   <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-[#64748B]">
-                    ID
+                    Email
                   </th>
 
                   <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-[#64748B]">
@@ -672,21 +672,15 @@ export default function Students() {
                               <p className="truncate font-semibold text-[#0F172A]">
                                 {name}
                               </p>
-
-                              {email && (
-                                <p className="mt-0.5 truncate text-xs text-[#64748B]">
-                                  {email}
-                                </p>
-                              )}
                             </div>
 
                           </div>
                         </td>
 
-                        {/* ID */}
+                        {/* Email */}
                         <td className="px-5 py-4">
                           <span className="text-sm font-medium text-[#475569]">
-                            {id ?? '—'}
+                            {email || '—'}
                           </span>
                         </td>
 
