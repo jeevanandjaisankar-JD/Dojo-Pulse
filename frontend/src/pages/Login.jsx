@@ -111,7 +111,7 @@ const Login = () => {
               Restricted Access
             </p>
             <p className="rounded-xl border border-rose-500/25 bg-rose-500/10 p-3 text-xs leading-relaxed text-slate-300">
-              Only the seven allowlisted mentor accounts can enter. Temporary account details live in the backend mentor configuration and must be replaced before deployment.
+              Only authorized, active mentor accounts can access this portal. Sign-in is verified securely against the mentor database.
             </p>
           </div>
         </div>

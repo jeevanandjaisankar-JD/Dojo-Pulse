@@ -1,47 +1,89 @@
-const jwt = require('jsonwebtoken');
-const { MENTORS } = require('../config/mentors');
 
-const authMiddleware = (req, res, next) => {
+const jwt = require('jsonwebtoken');
+const Mentor = require('../models/Mentor');
+
+const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       success: false,
-      message: 'Access denied. Mentor authentication required.'
+      message: 'Mentor authentication required.'
     });
   }
 
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.slice(7).trim();
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: 'Mentor authentication required.'
+    });
+  }
+
+  const secret = process.env.JWT_SECRET;
+
+  if (!secret || secret.length < 32) {
+    console.error('[Auth] JWT_SECRET is missing or too short.');
+
+    return res.status(503).json({
+      success: false,
+      message: 'Authentication service is temporarily unavailable.'
+    });
+  }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'dojo_pulse_super_secret_mentor_jwt_key_2026'
-    );
+    const decoded = jwt.verify(token, secret, {
+      algorithms: ['HS256'],
+      issuer: 'dojo-pulse',
+      audience: 'dojo-pulse-mentor-portal'
+    });
 
-    const mentor = MENTORS.find((m) => m.id === decoded.id || m.username === decoded.username);
-    if (!mentor) {
-      return res.status(403).json({
+    if (typeof decoded.sub !== 'string' || !decoded.sub) {
+      return res.status(401).json({
         success: false,
-        message: 'Unauthorized. Mentor profile not recognized.'
+        message: 'Invalid session. Please log in again.'
       });
     }
 
-    req.mentor = {
-      id: mentor.id,
-      name: mentor.name,
-      username: mentor.username,
-      email: mentor.email,
-      role: mentor.role,
-      track: mentor.track,
-      avatar: mentor.avatar
-    };
+    if (Mentor.db.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Authentication service is temporarily unavailable.'
+      });
+    }
 
-    next();
-  } catch (err) {
-    return res.status(401).json({
+    const mentor = await Mentor.findOne({
+      id: decoded.sub,
+      isActive: true
+    })
+      .select('id name username email role track avatar')
+      .lean();
+
+    if (!mentor) {
+      return res.status(401).json({
+        success: false,
+        message: 'Mentor account is inactive or not recognized.'
+      });
+    }
+
+    req.mentor = mentor;
+    return next();
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError' ||
+        error.name === 'TokenExpiredError' ||
+        error.name === 'NotBeforeError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired session. Please log in again.'
+      });
+    }
+
+    console.error('[Auth] Authentication request failed.');
+
+    return res.status(500).json({
       success: false,
-      message: 'Invalid or expired mentor session token. Please log in again.'
+      message: 'Unable to authenticate this request.'
     });
   }
 };
