@@ -1,110 +1,103 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { Trophy, Code2, Calendar } from "lucide-react";
-import { getStudentById } from "../services/api";
+import React, { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { getStudentById } from '../services/api';
+import { unwrap, toList, toPairs, humanize, fmtDate } from '../components/StatCard';
+import BeltChart, { BeltBadge, beltColor } from '../components/BeltChart';
 
 export default function StudentDetail() {
   const { id } = useParams();
   const [student, setStudent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await getStudentById(id);
-        if (data.success) setStudent(data.student);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    load();
+    let alive = true;
+    setLoading(true);
+    getStudentById(id)
+      .then((res) => alive && setStudent(unwrap(res)?.student ?? unwrap(res)))
+      .catch(() => alive && setError('Could not load this student.'))
+      .finally(() => alive && setLoading(false));
+    return () => { alive = false; };
   }, [id]);
 
-  if (!student) {
-    return (
-      <div className="flex justify-center items-center h-96 text-slate-400">
-        Loading student...
-      </div>
-    );
-  }
+  const name = student?.name ?? student?.full_name ?? student?.fullName ?? '';
+  const belt = student?.belt ?? student?.current_belt ?? student?.currentBelt ?? '';
+  const language = student?.language ?? student?.lang ?? '';
+  const timeline = toList(student?.belt_history ?? student?.beltHistory ?? student?.belts ?? student?.timeline);
+  const weekly = toPairs(student?.weekly_progress ?? student?.weeklyProgress ?? student?.weekly);
+  const details = Object.entries(student || {}).filter(
+    ([k, v]) => ['string', 'number'].includes(typeof v) && !/^(id|_id|name|full_name|fullName|belt|current_belt|currentBelt|language|lang)$/.test(k)
+  );
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Student Header */}
-      <div className="rounded-3xl bg-gradient-to-r from-[#07142D] to-[#0F172A] border border-red-500/20 p-8">
-        <div className="flex items-center gap-6">
-          <div className="w-24 h-24 rounded-full bg-[#E63946] flex items-center justify-center text-4xl font-black text-white">
-            {student.name.charAt(0)}
-          </div>
+    <div className="mx-auto max-w-7xl space-y-6 p-4 pb-28 sm:p-6 md:pb-8 lg:p-8">
+      <Link to="/students" className="inline-flex items-center gap-2 text-sm font-medium text-[#64748B] transition-colors hover:text-[#0F172A]">
+        <ArrowLeft size={16} /> Back to students
+      </Link>
 
-          <div>
-            <h1 className="text-4xl font-black text-white">
-              {student.name}
-            </h1>
-            <p className="text-slate-300 mt-1">
-              Student ID : {student.id}
-            </p>
-          </div>
+      {error && <div className="rounded-2xl border border-[#E63946]/30 bg-[#FDECEE] px-4 py-3 text-sm text-[#B91C1C]">{error}</div>}
+
+      {loading ? (
+        <div className="space-y-6">
+          <div className="skeleton h-40 w-full rounded-[20px]" />
+          <div className="skeleton h-64 w-full rounded-[20px]" />
         </div>
-      </div>
-
-      {/* Belt Cards */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {student.languages.map((lang) => (
-          <div
-            key={lang.name}
-            className="bg-[#0F172A] border border-slate-800 rounded-2xl p-5"
-          >
-            <Code2 className="text-red-400 mb-3" />
-
-            <h3 className="text-white font-bold">
-              {lang.name}
-            </h3>
-
-            <p className="text-3xl font-black text-white mt-2">
-              Belt {lang.belt}
-            </p>
-
-            <p className="text-slate-400 text-sm mt-1">
-              {lang.slots} Slots
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* Progress Timeline */}
-      <div className="bg-[#0F172A] border border-slate-800 rounded-2xl p-6">
-        <h2 className="text-xl font-bold text-white mb-5">
-          Weekly Progress
-        </h2>
-
-        <div className="space-y-4">
-          {student.history.map((item) => (
-            <div
-              key={item.week}
-              className="flex justify-between items-center bg-slate-800 rounded-xl p-4"
-            >
-              <div className="flex items-center gap-3">
-                <Calendar className="text-red-400" />
-
-                <div>
-                  <h3 className="text-white font-semibold">
-                    {item.week}
-                  </h3>
-
-                  <p className="text-slate-400 text-sm">
-                    {item.language}
-                  </p>
+      ) : student ? (
+        <>
+          <section className="grid-hero relative overflow-hidden rounded-[20px] border border-[#D6E4FA] p-6 sm:p-8">
+            <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center">
+              <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white text-3xl font-extrabold text-[#2563EB] shadow-sm">
+                {(name || '?').charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate text-3xl font-extrabold tracking-tight">{name || 'Unnamed student'}</h1>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <BeltBadge belt={belt} />
+                  {language && <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-[#475569]">{language}</span>}
                 </div>
               </div>
-
-              <div className="flex items-center gap-2 text-emerald-400 font-semibold">
-                <Trophy size={18} />
-                +{item.belts} Belt
-              </div>
             </div>
-          ))}
-        </div>
-      </div>
+          </section>
+
+          {details.length > 0 && (
+            <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {details.slice(0, 8).map(([k, v]) => (
+                <div key={k} className="card card-hover p-5">
+                  <p className="text-xs text-[#64748B]">{humanize(k)}</p>
+                  <p className="mt-1 truncate text-lg font-bold">{typeof v === 'number' ? v.toLocaleString() : v}</p>
+                </div>
+              ))}
+            </section>
+          )}
+
+          <section className="grid gap-6 lg:grid-cols-2">
+            <div className="card">
+              <h3 className="text-lg font-bold">Belt timeline</h3>
+              {timeline.length === 0 ? (
+                <p className="py-8 text-center text-sm text-[#64748B]">No belt history recorded yet.</p>
+              ) : (
+                <ol className="mt-6 space-y-6 border-l-2 border-[#E6EBF2] pl-6">
+                  {timeline.map((t, i) => {
+                    const b = typeof t === 'string' ? t : t.belt ?? t.name ?? t.label;
+                    const d = typeof t === 'object' ? t.date ?? t.achieved_at ?? t.achievedAt ?? t.awarded_at : null;
+                    return (
+                      <li key={i} className="relative">
+                        <span className="absolute -left-[33px] top-1 h-3.5 w-3.5 rounded-full ring-4 ring-white" style={{ background: beltColor(b) }} />
+                        <p className="font-semibold capitalize">{b}</p>
+                        {d && <p className="text-xs text-[#64748B]">{fmtDate(d)}</p>}
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+            </div>
+            <BeltChart title="Weekly progress" data={weekly} colorByBelt={false} />
+          </section>
+        </>
+      ) : (
+        !error && <div className="card text-center text-sm text-[#64748B]">Student not found.</div>
+      )}
     </div>
   );
 }

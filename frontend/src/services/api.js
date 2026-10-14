@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getToken } from './authService';
 
 const api = axios.create({
   baseURL: '/api',
@@ -7,10 +8,12 @@ const api = axios.create({
 
 // Interceptor to inject JWT token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('dojo_mentor_token');
+  const token = getToken();
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 }, (error) => Promise.reject(error));
 
@@ -68,4 +71,10 @@ export const getUploadHistory = async () => {
   return res.data;
 };
 
+export const deleteUploadHistory = async (id) => {
+  const res = await api.delete(`/uploads/history/${id}`);
+  return res.data;
+};
+
 export default api;
+// end of api
