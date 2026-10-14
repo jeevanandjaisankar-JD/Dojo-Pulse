@@ -1,95 +1,137 @@
+
 const jwt = require('jsonwebtoken');
-const { MENTORS } = require('../config/mentors');
+const bcrypt = require('bcryptjs');
+const Mentor = require('../models/Mentor');
+
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+
+  if (!secret || secret.length < 32) {
+    throw new Error('JWT_SECRET must be configured securely.');
+  }
+
+  return secret;
+};
 
 /**
- * Login mentor
+ * Login mentor using the team MongoDB database.
  */
 const login = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password } = req.body || {};
 
-    if (!username || !password) {
+    if (
+      typeof username !== 'string' ||
+      typeof password !== 'string' ||
+      !username.trim() ||
+      !password
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Username and password are required.'
+        message: 'Username/email and password are required.'
       });
     }
 
-    const mentor = MENTORS.find(
-      (m) =>
-        (m.username.toLowerCase() === username.trim().toLowerCase() ||
-         m.email.toLowerCase() === username.trim().toLowerCase()) &&
-        m.password === password
-    );
+    if (Mentor.db.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Authentication service is temporarily unavailable.'
+      });
+    }
 
-    if (!mentor) {
+    const identifier = username.trim().toLowerCase();
+
+    const mentor = await Mentor.findOne({
+      $or: [
+        { username: identifier },
+        { email: identifier }
+      ],
+      isActive: true
+    }).select('+passwordHash');
+
+    if (!mentor || !(await bcrypt.compare(password, mentor.passwordHash))) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials. Only authorized Kalvium Dojo mentor can access this portal.'
+        message: 'Invalid username/email or password.'
       });
     }
 
-    const token = jwt.sign(
-      {
-        id: mentor.id,
-        username: mentor.username,
-        name: mentor.name,
-        role: mentor.role
-      },
-      process.env.JWT_SECRET || 'dojo_pulse_super_secret_mentor_jwt_key_2026',
-      { expiresIn: '7d' }
-    );
+    const secret = getJwtSecret();
 
-    const safeMentor = {
-      id: mentor.id,
-      name: mentor.name,
-      username: mentor.username,
-      email: mentor.email,
-      role: mentor.role,
-      track: mentor.track,
-      avatar: mentor.avatar
-    };
+    const token = jwt.sign(
+      { sub: mentor.id },
+      secret,
+      {
+        algorithm: 'HS256',
+        expiresIn: '2h',
+        issuer: 'dojo-pulse',
+        audience: 'dojo-pulse-mentor-portal'
+      }
+    );
 
     return res.status(200).json({
       success: true,
       message: 'Login successful',
       token,
-      mentor: safeMentor
+      mentor: {
+        id: mentor.id,
+        name: mentor.name,
+        username: mentor.username,
+        email: mentor.email,
+        role: mentor.role,
+        track: mentor.track,
+        avatar: mentor.avatar
+      }
     });
   } catch (error) {
+    console.error('[Mentor Login] Authentication request failed.');
+
     return res.status(500).json({
       success: false,
-      message: `Login error: ${error.message}`
+      message: 'Unable to complete login at this time.'
     });
   }
 };
 
 /**
- * Get current authenticated mentor profile
+ * Get current authenticated mentor profile.
  */
 const getProfile = async (req, res) => {
-  try {
-    return res.status(200).json({
-      success: true,
-      mentor: req.mentor
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
+  return res.status(200).json({
+    success: true,
+    mentor: req.mentor
+  });
 };
 
 /**
- * List authorized mentors (public metadata)
+ * List authorized mentors' public metadata.
  */
 const getMentorsRoster = async (req, res) => {
-  const roster = MENTORS.map(({ password, ...mentor }) => mentor);
-  return res.status(200).json({
-    success: true,
-    mentors: roster
-  });
+  try {
+    if (Mentor.db.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Mentor roster is temporarily unavailable.'
+      });
+    }
+
+    const mentors = await Mentor.find({ isActive: true })
+      .select('id name role track avatar')
+      .sort({ name: 1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      mentors
+    });
+  } catch (error) {
+    console.error('[Mentor Roster] Failed to load roster.');
+
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to load mentor roster.'
+    });
+  }
 };
 
 module.exports = {

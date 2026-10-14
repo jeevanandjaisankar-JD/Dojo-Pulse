@@ -1,14 +1,27 @@
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
+  const mongoUri = process.env.MONGO_URI;
+
+  if (!mongoUri) {
+    throw new Error(
+      'MONGO_URI is required. Configure the authorized team database.'
+    );
+  }
+
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/dojo_pulse', {
-      serverSelectionTimeoutMS: 5000,
+    const conn = await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 5000
     });
-    console.log(`[Database] MongoDB Connected: ${conn.connection.host}`);
+
+    console.log(
+      `[Database] MongoDB connected: ${conn.connection.host}`
+    );
+
+    return conn;
   } catch (error) {
-    console.warn(`[Database Warning] MongoDB connection failed: ${error.message}`);
-    console.warn('[Database Warning] Running in offline/mock mode for API endpoints where database is optional.');
+    console.error('[Database] MongoDB connection failed.');
+    throw error;
   }
 };
 

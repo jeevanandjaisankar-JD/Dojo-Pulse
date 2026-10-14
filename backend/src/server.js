@@ -5,15 +5,33 @@ const connectDB = require('./config/db');
 
 const port = Number(process.env.PORT) || 5000;
 
+const validateEnvironment = () => {
+  const secret = process.env.JWT_SECRET;
+
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      'JWT_SECRET must be configured with at least 32 characters.'
+    );
+  }
+
+  if (!process.env.MONGO_URI) {
+    throw new Error('MONGO_URI must be configured.');
+  }
+};
+
 const startServer = async () => {
+  validateEnvironment();
+
   await connectDB();
 
   app.listen(port, () => {
-    console.log(`[Server] Dojo-Pulse API listening on http://localhost:${port}`);
+    console.log('[Server] Dojo-Pulse API started successfully.');
   });
 };
 
-startServer().catch((error) => {
-  console.error('[Server] Failed to start:', error);
+startServer().catch(() => {
+  console.error(
+    '[Server] Startup failed. Check the deployment environment configuration and database connectivity.'
+  );
   process.exit(1);
 });
