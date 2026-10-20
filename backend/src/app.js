@@ -34,10 +34,21 @@ app.use((req, res) => {
 });
 
 app.use((error, req, res, next) => {
-  console.error('[API Error]', error);
-  res.status(error.status || 500).json({
+  const status = Number.isInteger(error.status) &&
+    error.status >= 400 &&
+    error.status < 500
+    ? error.status
+    : 500;
+
+  if (status === 500) {
+    console.error('[API Error] An unexpected server error occurred.');
+  }
+
+  res.status(status).json({
     success: false,
-    message: error.message || 'An unexpected server error occurred.'
+    message: status === 500
+      ? 'An unexpected server error occurred.'
+      : error.message || 'Request failed.'
   });
 });
 

@@ -1,47 +1,84 @@
 const jwt = require('jsonwebtoken');
-const { MENTORS } = require('../config/mentors');
+const mongoose = require('mongoose');
+const User = require('../models/User');
 
-const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      success: false,
-      message: 'Access denied. Mentor authentication required.'
-    });
-  }
-
-  const token = authHeader.split(' ')[1];
-
+const authMiddleware = async (req, res, next) => {
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'dojo_pulse_super_secret_mentor_jwt_key_2026'
-    );
+    const authHeader = req.headers.authorization;
 
-    const mentor = MENTORS.find((m) => m.id === decoded.id || m.username === decoded.username);
-    if (!mentor) {
-      return res.status(403).json({
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
         success: false,
-        message: 'Unauthorized. Mentor profile not recognized.'
+        message: 'Authentication required.'
       });
     }
 
-    req.mentor = {
-      id: mentor.id,
-      name: mentor.name,
-      username: mentor.username,
-      email: mentor.email,
-      role: mentor.role,
-      track: mentor.track,
-      avatar: mentor.avatar
+    const token = authHeader.split(' ')[1];
+    const secret = process.env.JWT_SECRET;
+
+    if (!secret || secret.length < 32) {
+      return res.status(503).json({
+        success: false,
+        message: 'Authentication service is not configured.'
+      });
+    }
+
+    const decoded = jwt.verify(token, secret, {
+      algorithms: ['HS256'],
+      issuer: 'dojo-pulse',
+      audience: 'dojo-pulse-mentor-portal'
+    });
+
+    if (
+      typeof decoded.sub !== 'string' ||
+      !mongoose.Types.ObjectId.isValid(decoded.sub)
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid authentication token.'
+      });
+    }
+
+    if (User.db.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database is temporarily unavailable.'
+      });
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Account not found or inactive.'
+      });
+    }
+
+    req.user = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      squad: user.squad
     };
 
-    next();
-  } catch (err) {
-    return res.status(401).json({
+    return next();
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError' ||
+        error.name === 'TokenExpiredError' ||
+        error.name === 'CastError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired authentication token.'
+      });
+    }
+
+    console.error('[Auth Middleware] Request authentication failed.');
+
+    return res.status(500).json({
       success: false,
-      message: 'Invalid or expired mentor session token. Please log in again.'
+      message: 'Could not authenticate request.'
     });
   }
 };

@@ -1,99 +1,66 @@
-const jwt = require('jsonwebtoken');
-const { MENTORS } = require('../config/mentors');
 
-/**
- * Login mentor
- */
-const login = async (req, res) => {
-  try {
-    const { username, password } = req.body;
+const User = require('../models/User');
 
-    if (!username || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Username and password are required.'
-      });
-    }
-
-    const mentor = MENTORS.find(
-      (m) =>
-        (m.username.toLowerCase() === username.trim().toLowerCase() ||
-         m.email.toLowerCase() === username.trim().toLowerCase()) &&
-        m.password === password
-    );
-
-    if (!mentor) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials. Only authorized Kalvium Dojo mentor can access this portal.'
-      });
-    }
-
-    const token = jwt.sign(
-      {
-        id: mentor.id,
-        username: mentor.username,
-        name: mentor.name,
-        role: mentor.role
-      },
-      process.env.JWT_SECRET || 'dojo_pulse_super_secret_mentor_jwt_key_2026',
-      { expiresIn: '7d' }
-    );
-
-    const safeMentor = {
-      id: mentor.id,
-      name: mentor.name,
-      username: mentor.username,
-      email: mentor.email,
-      role: mentor.role,
-      track: mentor.track,
-      avatar: mentor.avatar
-    };
-
-    return res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      token,
-      mentor: safeMentor
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: `Login error: ${error.message}`
-    });
-  }
-};
-
-/**
- * Get current authenticated mentor profile
- */
+// Return the authenticated account's profile.
 const getProfile = async (req, res) => {
-  try {
-    return res.status(200).json({
-      success: true,
-      mentor: req.mentor
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
+  const user = req.user;
 
-/**
- * List authorized mentors (public metadata)
- */
-const getMentorsRoster = async (req, res) => {
-  const roster = MENTORS.map(({ password, ...mentor }) => mentor);
   return res.status(200).json({
     success: true,
-    mentors: roster
+    user,
+    ...(user.role === 'mentor'
+      ? {
+          mentor: {
+            ...user,
+            username: user.email,
+            track: '',
+            avatar: ''
+          }
+        }
+      : {})
   });
 };
 
+// List active mentor accounts.
+const getMentorsRoster = async (req, res) => {
+  try {
+    if (User.db.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Mentor roster is temporarily unavailable.'
+      });
+    }
+
+    const mentors = await User.find({
+      role: 'mentor',
+      isActive: true
+    })
+      .select('name email role')
+      .sort({ name: 1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      mentors: mentors.map((mentor) => ({
+        id: mentor._id.toString(),
+        name: mentor.name,
+        email: mentor.email,
+        role: mentor.role,
+        track: '',
+        avatar: ''
+      }))
+    });
+  } catch (error) {
+    console.error('[Mentor Roster] Failed to load roster.');
+
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to load mentor roster.'
+    });
+  }
+};
+
 module.exports = {
-  login,
   getProfile,
   getMentorsRoster
 };

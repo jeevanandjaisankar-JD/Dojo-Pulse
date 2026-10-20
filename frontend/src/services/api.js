@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { getToken } from './authService';
 
@@ -6,20 +7,23 @@ const api = axios.create({
   timeout: 30000,
 });
 
-// Interceptor to inject JWT token
-api.interceptors.request.use((config) => {
-  const token = getToken();
+// Attach the current authentication token to API requests.
+api.interceptors.request.use(
+  (config) => {
+    const token = getToken();
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
 
-  return config;
-}, (error) => Promise.reject(error));
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-// Auth APIs
-export const loginMentor = async (username, password) => {
-  const res = await api.post('/auth/login', { username, password });
+// Authentication APIs
+export const loginWithGoogle = async (idToken) => {
+  const res = await api.post('/auth/google', { idToken });
   return res.data;
 };
 
@@ -77,4 +81,3 @@ export const deleteUploadHistory = async (id) => {
 };
 
 export default api;
-// end of api
