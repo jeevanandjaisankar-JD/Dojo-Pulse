@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-
+const requireRole = require('../middlewares/requireRole');
 const upload = require('../middlewares/uploadMiddleware');
 const authMiddleware = require('../middlewares/authMiddleware');
 
@@ -16,6 +16,7 @@ const router = express.Router();
 router.post(
   '/',
   authMiddleware,
+  requireRole('mentor'),
   upload.single('file'),
   uploadDojoFile
 );
@@ -24,6 +25,7 @@ router.post(
 router.get(
   '/history',
   authMiddleware,
+  requireRole('mentor'),
   getUploadHistory
 );
 
@@ -31,20 +33,21 @@ router.get(
 router.delete(
   '/history/:id',
   authMiddleware,
+  requireRole('mentor'),
   deleteUploadHistory
 );
 
 // Convert Multer validation errors into the same API error shape
 // as the rest of the backend.
 router.use((error, req, res, next) => {
-  if (error instanceof multer.MulterError || error) {
+  if (error instanceof multer.MulterError) {
     return res.status(400).json({
       success: false,
-      message: error.message || 'Unable to upload the selected file.'
+      message: error.message || 'Invalid upload request.'
     });
   }
 
-  return next();
+  return next(error);
 });
 
 module.exports = router;

@@ -1,5 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginMentor, getMentorProfile } from '../services/api';
+
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback
+} from 'react';
+
+import {
+  loginWithGoogle,
+  getMentorProfile
+} from '../services/api';
+
 import {
   getToken,
   setToken,
@@ -8,45 +20,60 @@ import {
 
 const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
-  const [mentor, setMentor] = useState(() => {
-    try {
-      const saved = localStorage.getItem('dojo_mentor_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      localStorage.removeItem('dojo_mentor_user');
-      localStorage.removeItem('dojo_mentor_token');
-      return null;
-    }
-  });
+const USER_STORAGE_KEY = 'dojo_auth_user';
+const LEGACY_USER_STORAGE_KEY = 'dojo_mentor_user';
 
-  const [token, setTokenState] = useState(() => getToken());
+const readSavedUser = () => {
+  try {
+    const saved =
+      localStorage.getItem(USER_STORAGE_KEY) ||
+      localStorage.getItem(LEGACY_USER_STORAGE_KEY);
+
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_USER_STORAGE_KEY);
+    return null;
+  }
+};
+
+const saveUser = (user) => {
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  localStorage.removeItem(LEGACY_USER_STORAGE_KEY);
+};
+
+const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(readSavedUser);
+  const [token, setTokenState] = useState(getToken);
   const [loading, setLoading] = useState(true);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     logoutSession();
     setTokenState(null);
-    setMentor(null);
-    localStorage.removeItem('dojo_mentor_user');
-  };
+    setUser(null);
+    localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_USER_STORAGE_KEY);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     const verifySession = async () => {
       try {
-        if (!token) return;
+        if (!token) {
+          setUser(null);
+          return;
+        }
 
         const data = await getMentorProfile();
 
         if (cancelled) return;
 
-        if (data.success && data.mentor) {
-          setMentor(data.mentor);
-          localStorage.setItem(
-            'dojo_mentor_user',
-            JSON.stringify(data.mentor)
-          );
+        const profile = data.user || data.mentor;
+
+        if (data.success && profile && profile.role) {
+          setUser(profile);
+          saveUser(profile);
         } else {
           logout();
         }
@@ -62,38 +89,41 @@ export const AuthProvider = ({ children }) => {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, logout]);
 
-  const login = async (username, password) => {
-    const data = await loginMentor(username, password);
+  const loginGoogle = async (idToken) => {
+    const data = await loginWithGoogle(idToken);
 
-    if (data.success) {
-      setToken(data.token);
-      setTokenState(data.token);
-      setMentor(data.mentor);
-
-      localStorage.setItem(
-        'dojo_mentor_user',
-        JSON.stringify(data.mentor)
-      );
-
-      return { success: true };
+    if (!data.success || !data.token || !data.user) {
+      return {
+        success: false,
+        message: data.message || 'Google sign-in failed.'
+      };
     }
 
+    setToken(data.token);
+    setTokenState(data.token);
+    setUser(data.user);
+    saveUser(data.user);
+
     return {
-      success: false,
-      message: data.message
+      success: true,
+      user: data.user
     };
   };
+
+  // Preserve the alias used by existing mentor dashboard components.
+  const mentor = user?.role === 'mentor' ? user : null;
 
   return (
     <AuthContext.Provider
       value={{
+        user,
         mentor,
         token,
-        isAuthenticated: Boolean(mentor && token),
+        isAuthenticated: Boolean(user && token),
         loading,
-        login,
+        loginGoogle,
         logout
       }}
     >
@@ -111,3 +141,5 @@ export const useAuth = () => {
 
   return context;
 };
+
+export { AuthProvider };

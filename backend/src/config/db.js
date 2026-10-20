@@ -1,28 +1,22 @@
+
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
   const mongoUri = process.env.MONGO_URI;
 
   if (!mongoUri) {
-    throw new Error(
-      'MONGO_URI is required. Configure the authorized team database.'
-    );
+    throw new Error('MONGO_URI must be configured.');
   }
 
-  try {
-    const conn = await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 5000
-    });
+  const conn = await mongoose.connect(mongoUri, {
+    serverSelectionTimeoutMS: 10000,
+  });
 
-    console.log(
-      `[Database] MongoDB connected: ${conn.connection.host}`
-    );
+  console.log(
+    `[Database] MongoDB connected: ${conn.connection.host}`
+  );
 
-    return conn;
-  } catch (error) {
-    console.error('[Database] MongoDB connection failed.');
-    throw error;
-  }
+  return conn;
 };
 
 module.exports = connectDB;
