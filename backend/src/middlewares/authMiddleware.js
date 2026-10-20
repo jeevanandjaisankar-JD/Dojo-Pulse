@@ -1,89 +1,84 @@
-
 const jwt = require('jsonwebtoken');
-const Mentor = require('../models/Mentor');
+const mongoose = require('mongoose');
+const User = require('../models/User');
 
 const authMiddleware = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      success: false,
-      message: 'Mentor authentication required.'
-    });
-  }
-
-  const token = authHeader.slice(7).trim();
-
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: 'Mentor authentication required.'
-    });
-  }
-
-  const secret = process.env.JWT_SECRET;
-
-  if (!secret || secret.length < 32) {
-    console.error('[Auth] JWT_SECRET is missing or too short.');
-
-    return res.status(503).json({
-      success: false,
-      message: 'Authentication service is temporarily unavailable.'
-    });
-  }
-
   try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required.'
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const secret = process.env.JWT_SECRET;
+
+    if (!secret || secret.length < 32) {
+      return res.status(503).json({
+        success: false,
+        message: 'Authentication service is not configured.'
+      });
+    }
+
     const decoded = jwt.verify(token, secret, {
       algorithms: ['HS256'],
       issuer: 'dojo-pulse',
       audience: 'dojo-pulse-mentor-portal'
     });
 
-    if (typeof decoded.sub !== 'string' || !decoded.sub) {
+    if (
+      typeof decoded.sub !== 'string' ||
+      !mongoose.Types.ObjectId.isValid(decoded.sub)
+    ) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid session. Please log in again.'
+        message: 'Invalid authentication token.'
       });
     }
 
-    if (Mentor.db.readyState !== 1) {
+    if (User.db.readyState !== 1) {
       return res.status(503).json({
         success: false,
-        message: 'Authentication service is temporarily unavailable.'
+        message: 'Database is temporarily unavailable.'
       });
     }
 
-    const mentor = await Mentor.findOne({
-      id: decoded.sub,
-      isActive: true
-    })
-      .select('id name username email role track avatar')
-      .lean();
+    const user = await User.findById(decoded.sub);
 
-    if (!mentor) {
+    if (!user || !user.isActive) {
       return res.status(401).json({
         success: false,
-        message: 'Mentor account is inactive or not recognized.'
+        message: 'Account not found or inactive.'
       });
     }
 
-    req.mentor = mentor;
+    req.user = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      squad: user.squad
+    };
+
     return next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError' ||
         error.name === 'TokenExpiredError' ||
-        error.name === 'NotBeforeError') {
+        error.name === 'CastError') {
       return res.status(401).json({
         success: false,
-        message: 'Invalid or expired session. Please log in again.'
+        message: 'Invalid or expired authentication token.'
       });
     }
 
-    console.error('[Auth] Authentication request failed.');
+    console.error('[Auth Middleware] Request authentication failed.');
 
     return res.status(500).json({
       success: false,
-      message: 'Unable to authenticate this request.'
+      message: 'Could not authenticate request.'
     });
   }
 };

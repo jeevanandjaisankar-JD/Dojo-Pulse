@@ -1,168 +1,141 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
+import { ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import {
-  ShieldCheck,
-  LogIn,
-  Sparkles,
-  KeyRound,
-  Eye,
-  EyeOff
-} from 'lucide-react';
 import kalviumLogo from '../assets/kalvium-logo.svg';
 
 const Login = () => {
-  const { login, isAuthenticated } = useAuth();
+  const { loginGoogle, user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+
+  const destinationFor = (account) =>
+    account?.role === 'mentor' ? '/' : '/student';
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
+    if (!authLoading && isAuthenticated && user) {
+      navigate(destinationFor(user), { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [authLoading, isAuthenticated, user, navigate]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleGoogleSuccess = async (credentialResponse) => {
+    if (!credentialResponse?.credential) {
+      setError('Google did not return a sign-in token. Please try again.');
+      return;
+    }
+
     setError('');
     setLoading(true);
 
     try {
-      const res = await login(username, password);
+      const result = await loginGoogle(credentialResponse.credential);
 
-      if (res.success) {
-        navigate('/');
+      if (result.success) {
+        navigate(destinationFor(result.user), { replace: true });
       } else {
-        setError(
-          res.message || 'Authentication failed. Please check credentials.'
-        );
+        setError(result.message || 'Google sign-in failed.');
       }
     } catch (err) {
       setError(
-        err.response?.data?.message || 'Server connection failed.'
+        err.response?.data?.message ||
+          'Google sign-in failed. Please try again.'
       );
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#F7F9FC] flex flex-col justify-center items-center p-6 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-      <div className="w-full max-w-md relative z-10">
-        {/* Brand Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-semibold mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            Kalvium Dojo Belt Evaluation Suite
+  return (
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#F7F9FC] p-6">
+      <div className="pointer-events-none absolute left-1/2 top-1/4 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/10 blur-3xl" />
+
+      <div className="relative z-10 w-full max-w-md">
+        <div className="mb-8 text-center">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
+           
           </div>
 
-          <h1 className="text-3xl font-extrabold text-[#0F172A] tracking-tight">
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#0F172A]">
             <img
               src={kalviumLogo}
               alt="Kalvium"
-              className="h-10 w-auto object-contain inline-block mr-2"
+              className="mr-2 inline-block h-10 w-auto object-contain"
             />
-            Login
+            Sign in
           </h1>
 
-          <p className="text-sm text-[#64748B] mt-1">
-            Restricted Portal — Authorized Kalvium Portal
+          <p className="mt-2 text-sm text-[#64748B]">
+            For Kalvium mentors and students
           </p>
         </div>
 
-        {/* Login Card */}
-        <div className="p-8 rounded-2xl bg-white border border-[#E6EBF2] shadow-xl">
+        <div className="rounded-2xl border border-[#E6EBF2] bg-white p-8 shadow-xl">
           {error && (
-            <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+            <div
+              role="alert"
+              className="mb-5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-600"
+            >
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Username */}
-            <div>
-              <label className="block text-xs font-semibold text-[#475569] uppercase tracking-wider mb-1.5">
-                Kalvium Mentor Username / Email
-              </label>
-
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Username or Email"
-                required
-                className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#D8E0EA] text-[#0F172A] placeholder-[#94A3B8] text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-xs font-semibold text-[#475569] uppercase tracking-wider mb-1.5">
-                Password
-              </label>
-
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  required
-                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#D8E0EA] text-[#0F172A] placeholder-[#94A3B8] text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all pr-10"
+          <div className="flex justify-center">
+            {googleClientId ? (
+              <div className="flex w-full flex-col items-center gap-3">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() =>
+                    setError('Google sign-in was cancelled or failed.')
+                  }
+                  theme="outline"
+                  shape="rectangular"
+                  size="large"
+                  text="continue_with"
+                  width="320"
                 />
 
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A]"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
+                {loading && (
+                  <p className="text-sm text-slate-500" role="status">
+                    Verifying your Kalvium account...
+                  </p>
+                )}
               </div>
-            </div>
+            ) : (
+              <p className="w-full rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                Google sign-in is not configured. Please contact the Dojo Pulse
+                administrator.
+              </p>
+            )}
+          </div>
 
-            {/* Login Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-2 py-3 px-4 rounded-xl bg-[#E63946] hover:bg-[#D92F3D] text-white font-semibold text-sm shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+          <p className="mt-6 text-center text-sm text-slate-600">
+            Forgot your Google password?{' '}
+            <a
+              href="https://accounts.google.com/signin/recovery"
+              className="font-semibold text-blue-600 hover:text-blue-800"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              <LogIn className="w-4 h-4" />
-              {loading ? 'Authenticating Mentor...' : 'Sign In'}
-            </button>
-          </form>
+              Recover your account
+            </a>
+          </p>
 
-          {/* Access Scope */}
-          <div className="mt-6 pt-5 border-t border-[#E6EBF2]">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#64748B] mb-3 flex items-center gap-1.5">
-              <KeyRound className="w-3.5 h-3.5 text-[#E63946]" />
-              Restricted Access
+          <div className="mt-6 border-t border-[#E6EBF2] pt-5">
+            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#64748B]">
+              <ShieldCheck className="h-3.5 w-3.5 text-[#E63946]" />
+              Secure access
             </p>
-
-            <p className="rounded-xl border border-rose-500/25 bg-rose-500/10 p-3 text-xs leading-relaxed text-slate-600">
-              Only authorized, active mentor accounts can access this portal.
-              Sign-in is verified securely against the mentor database.
+            <p className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
+              Sign in with your verified Kalvium Google account. The server
+              determines your role and access permissions.
             </p>
           </div>
-        </div>
-
-        {/* Security note */}
-        <div className="flex items-center justify-center gap-2 mt-5 text-xs text-[#94A3B8]">
-          <ShieldCheck className="w-4 h-4" />
-          Secure access
         </div>
       </div>
     </div>

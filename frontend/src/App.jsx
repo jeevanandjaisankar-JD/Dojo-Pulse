@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -6,6 +7,7 @@ import Layout from './components/Layout';
 
 // Pages
 import Login from './pages/Login';
+import StudentHome from './pages/StudentHome';
 import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import StudentDetail from './pages/StudentDetail';
@@ -18,11 +20,16 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public Authentication Route */}
+          {/* Single public entry point */}
           <Route path="/login" element={<Login />} />
 
-          {/* Protected Application Routes under Main Layout */}
-          <Route element={<ProtectedRoute />}>
+          {/* Student-only route */}
+          <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+            <Route path="/student" element={<StudentHome />} />
+          </Route>
+
+          {/* Mentor-only application routes */}
+          <Route element={<ProtectedRoute allowedRoles={['mentor']} />}>
             <Route element={<Layout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/students" element={<Students />} />
