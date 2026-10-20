@@ -58,8 +58,7 @@ const Login = () => {
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
-            <Sparkles className="h-3.5 w-3.5" />
-            Kalvium Dojo Belt Evaluation Suite
+           
           </div>
 
           <h1 className="text-3xl font-extrabold tracking-tight text-[#0F172A]">
