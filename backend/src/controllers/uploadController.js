@@ -158,13 +158,40 @@ const uploadDojoFile = async (req, res) => {
 
       cleanedData = await runPythonAggregation(allRecords);
 
-      // Preserve the existing mentor assignment for students already
-      // present in the dashboard.
-      await saveStudents(
-        cleanedData.cleanedStudents,
-        req.mentor.name,
-        true
-      );
+      
+// Reconcile students only within the squads represented in
+// the canonical belt-test dataset. Preserve unrelated students.
+const canonicalStudents = cleanedData.cleanedStudents || [];
+
+if (canonicalStudents.length > 0) {
+  const canonicalStudentIds = canonicalStudents.map(
+    (student) => student.studentId
+  );
+
+  const canonicalBatches = [
+    ...new Set(
+      canonicalStudents
+        .map((student) => student.batch)
+        .filter(Boolean)
+    )
+  ];
+
+  if (canonicalBatches.length > 0) {
+    await Student.deleteMany({
+      batch: { $in: canonicalBatches },
+      studentId: { $nin: canonicalStudentIds }
+    });
+  }
+
+  // Upsert the current canonical students without overwriting
+  // existing mentor assignments.
+  await saveStudents(
+    canonicalStudents,
+    req.mentor.name,
+    true
+  );
+}
+
     } else {
       // Existing CSV/XLS/XLSX upload behavior remains unchanged.
       await saveStudents(

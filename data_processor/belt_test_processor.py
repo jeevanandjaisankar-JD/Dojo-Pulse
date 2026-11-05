@@ -161,10 +161,11 @@ def process_belt_test_file(incoming_path, master_csv_path=None):
         },
     }
 
+
 def aggregate_records(records):
     """
     Rebuild dashboard-compatible student data from all stored belt-test records.
-    Uses the existing cleaner aggregation logic to preserve API compatibility.
+    Preserve the source squad number as the student's batch.
     """
     try:
         from .cleaner import aggregate_pipeline
@@ -193,8 +194,13 @@ def aggregate_records(records):
         initial = record["initialBeltLevels"]
         final = record["finalBeltLevels"]
 
+        # Normalize values such as 138, S.138, or Squad 138.
+        raw_squad = str(record.get("squadNumber") or "").strip()
+        squad_match = __import__("re").search(r"(\d+)", raw_squad)
+        batch = f"S.{squad_match.group(1)}" if squad_match else None
+
         for key, language in LANGUAGES.items():
-            attempts.append({
+            attempt = {
                 "id": f"{test_id}:{key}",
                 "email": email,
                 "name": name,
@@ -202,9 +208,15 @@ def aggregate_records(records):
                 "verified_belt_level": int(initial.get(key, 0)),
                 "belt_level": int(final.get(key, 0)),
                 "workout_updated_at": timestamp,
-            })
+            }
+
+            if batch:
+                attempt["batch"] = batch
+
+            attempts.append(attempt)
 
     result = aggregate_pipeline(pd.DataFrame(attempts))
     result["summary"]["sourceRecords"] = len(records)
 
     return result
+
