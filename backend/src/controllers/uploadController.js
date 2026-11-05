@@ -1,8 +1,14 @@
+
 const fs = require('fs/promises');
 
 const UploadHistory = require('../models/UploadHistory');
 const Student = require('../models/Student');
-const { runPythonPipeline } = require('../services/pythonRunner');
+const BeltTestRecord = require('../models/BeltTestRecord');
+
+const {
+  runPythonPipeline,
+  runPythonAggregation
+} = require('../services/pythonRunner');
 
 const databaseReady = () => UploadHistory.db?.readyState === 1;
 
@@ -13,12 +19,54 @@ const parseSlotNumber = (value) => {
 
 const markHistoryFailed = async (historyEntry, error) => {
   if (!historyEntry) return;
+
   historyEntry.status = 'FAILED';
   historyEntry.errorMessage = error.message;
   await historyEntry.save();
 };
 
-/** Store the raw file, process it with Pandas, and persist the cleaned view. */
+
+const saveStudents = async (students, mentorName, preserveMentor = false) => {
+  for (const student of students || []) {
+    const fields = {
+      studentId: student.studentId,
+      email: student.email || student.studentId,
+      name: student.name,
+      batch: student.batch,
+      verifiedBelts: student.verifiedBelts,
+      currentBeltLevel: student.currentBeltLevel,
+      totalBeltsEarned: student.totalBeltsEarned,
+      totalSlotsAttempted: student.totalSlotsAttempted,
+      improvementStatus: student.improvementStatus,
+      languagesAttempted: student.languagesAttempted,
+      sameDayProgress: student.sameDayProgress
+    };
+
+    if (!preserveMentor) {
+      fields.mentorName = mentorName;
+    }
+
+    await Student.findOneAndUpdate(
+      { studentId: student.studentId },
+      {
+        $set: fields,
+        ...(preserveMentor
+          ? { $setOnInsert: { mentorName } }
+          : {})
+      },
+      {
+        upsert: true,
+        new: true,
+        runValidators: true
+      }
+    );
+  }
+};
+
+
+/**
+ * Store the uploaded file, process it, and persist dashboard data.
+ */
 const uploadDojoFile = async (req, res) => {
   if (!req.file) {
     return res.status(400).json({
@@ -28,9 +76,8 @@ const uploadDojoFile = async (req, res) => {
   }
 
   if (!databaseReady()) {
-    // Multer writes before the controller is reached. Do not retain an
-    // untracked upload when its history/audit record cannot be stored.
     await fs.unlink(req.file.path).catch(() => undefined);
+
     return res.status(503).json({
       success: false,
       message: 'MongoDB is unavailable. Start MongoDB before uploading Dojo data.'
@@ -57,48 +104,86 @@ const uploadDojoFile = async (req, res) => {
     });
 
     let cleanedData;
+
     try {
       cleanedData = await runPythonPipeline(req.file.path, slotNumber);
     } catch (error) {
       await markHistoryFailed(historyEntry, error);
+
       return res.status(422).json({
         success: false,
-        message: `The file was stored, but Pandas could not clean it: ${error.message}`,
+        message: `The file was stored, but Pandas could not process it: ${error.message}`,
         historyId: historyEntry._id
       });
     }
 
-    for (const student of cleanedData.cleanedStudents || []) {
-      await Student.findOneAndUpdate(
-        { studentId: student.studentId },
-        {
-          $set: {
-            studentId: student.studentId,
-            email: student.email || student.studentId,
-            name: student.name,
-            batch: student.batch,
-            mentorName: req.mentor.name,
-            verifiedBelts: student.verifiedBelts,
-            currentBeltLevel: student.currentBeltLevel,
-            totalBeltsEarned: student.totalBeltsEarned,
-            totalSlotsAttempted: student.totalSlotsAttempted,
-            improvementStatus: student.improvementStatus,
-            languagesAttempted: student.languagesAttempted,
-            sameDayProgress: student.sameDayProgress
-          }
-        },
-        { upsert: true, new: true, runValidators: true }
+    // New belt-test CSV: persist canonical raw records and rebuild
+    // dashboard data from every record currently stored in MongoDB.
+    if (Array.isArray(cleanedData.records)) {
+      const records = cleanedData.records;
+
+      if (records.length === 0) {
+        throw new Error('The belt-test CSV contains no records.');
+      }
+
+      const operations = records.map((record) => ({
+        updateOne: {
+          filter: { testId: record.testId },
+          update: {
+            $set: {
+              testId: record.testId,
+              startTime: record.startTime || '',
+              calculatedEndTime: record.calculatedEndTime || '',
+              beltTestUpdatedAt: record.beltTestUpdatedAt || '',
+              studentName: record.studentName,
+              email: record.email,
+              squadNumber: record.squadNumber || '',
+              initialBeltLevels: record.initialBeltLevels,
+              finalBeltLevels: record.finalBeltLevels,
+              uploadedBy: {
+                id: String(req.mentor.id || ''),
+                name: req.mentor.name || '',
+                email: req.mentor.email || ''
+              },
+              sourceFilename: record.sourceFilename || req.file.originalname
+            }
+          },
+          upsert: true
+        }
+      }));
+
+      await BeltTestRecord.bulkWrite(operations, { ordered: false });
+
+      const allRecords = await BeltTestRecord.find({}).lean();
+
+      cleanedData = await runPythonAggregation(allRecords);
+
+      // Preserve the existing mentor assignment for students already
+      // present in the dashboard.
+      await saveStudents(
+        cleanedData.cleanedStudents,
+        req.mentor.name,
+        true
+      );
+    } else {
+      // Existing CSV/XLS/XLSX upload behavior remains unchanged.
+      await saveStudents(
+        cleanedData.cleanedStudents,
+        req.mentor.name,
+        false
       );
     }
 
     historyEntry.status = 'COMPLETED';
-    historyEntry.rowsProcessed = cleanedData.summary?.totalSlotsEvaluated || 0;
+    historyEntry.rowsProcessed =
+      cleanedData.summary?.totalSlotsEvaluated || 0;
     historyEntry.summary = cleanedData.summary || {};
+
     await historyEntry.save();
 
     return res.status(201).json({
       success: true,
-      message: 'Dojo file stored, cleaned with Pandas, and added to the dashboard.',
+      message: 'Dojo file stored, processed, and added to the dashboard.',
       file: {
         filename: req.file.filename,
         originalName: req.file.originalname,
@@ -109,6 +194,7 @@ const uploadDojoFile = async (req, res) => {
     });
   } catch (error) {
     await markHistoryFailed(historyEntry, error).catch(() => undefined);
+
     return res.status(500).json({
       success: false,
       message: `File processing error: ${error.message}`
@@ -126,8 +212,14 @@ const getUploadHistory = async (req, res) => {
       });
     }
 
-    const history = await UploadHistory.find({}).sort({ createdAt: -1 }).lean();
-    return res.status(200).json({ success: true, history });
+    const history = await UploadHistory.find({})
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      history
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -136,9 +228,7 @@ const getUploadHistory = async (req, res) => {
   }
 };
 
-module.exports = { uploadDojoFile, getUploadHistory };
-
-/** Delete one upload-history entry and its stored raw file. */
+/** Delete upload history and its uploaded file, not canonical test records. */
 const deleteUploadHistory = async (req, res) => {
   try {
     if (!databaseReady()) {
@@ -157,11 +247,8 @@ const deleteUploadHistory = async (req, res) => {
       });
     }
 
-    // Delete the database history record.
     await UploadHistory.deleteOne({ _id: historyEntry._id });
 
-    // Delete the stored raw CSV file.
-    // If the file is already missing, deletion should still succeed.
     if (historyEntry.filePath) {
       await fs.unlink(historyEntry.filePath).catch(() => undefined);
     }
