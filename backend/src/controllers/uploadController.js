@@ -25,8 +25,11 @@ const markHistoryFailed = async (historyEntry, error) => {
   await historyEntry.save();
 };
 
-
-const saveStudents = async (students, mentorName, preserveMentor = false) => {
+const saveStudents = async (
+  students,
+  mentorName,
+  preserveMentor = false
+) => {
   for (const student of students || []) {
     const fields = {
       studentId: student.studentId,
@@ -63,11 +66,20 @@ const saveStudents = async (students, mentorName, preserveMentor = false) => {
   }
 };
 
-
 /**
  * Store the uploaded file, process it, and persist dashboard data.
  */
 const uploadDojoFile = async (req, res) => {
+  // Support both legacy Mentor authentication and User authentication.
+  const uploader = req.mentor || req.user;
+
+  if (!uploader) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authenticated mentor information is missing.'
+    });
+  }
+
   if (!req.file) {
     return res.status(400).json({
       success: false,
@@ -96,9 +108,9 @@ const uploadDojoFile = async (req, res) => {
       mimeType: req.file.mimetype,
       slotNumber,
       uploadedBy: {
-        id: req.mentor.id,
-        name: req.mentor.name,
-        email: req.mentor.email
+        id: String(uploader.id || ''),
+        name: uploader.name || '',
+        email: uploader.email || ''
       },
       status: 'PROCESSING'
     });
@@ -106,7 +118,10 @@ const uploadDojoFile = async (req, res) => {
     let cleanedData;
 
     try {
-      cleanedData = await runPythonPipeline(req.file.path, slotNumber);
+      cleanedData = await runPythonPipeline(
+        req.file.path,
+        slotNumber
+      );
     } catch (error) {
       await markHistoryFailed(historyEntry, error);
 
@@ -141,62 +156,64 @@ const uploadDojoFile = async (req, res) => {
               initialBeltLevels: record.initialBeltLevels,
               finalBeltLevels: record.finalBeltLevels,
               uploadedBy: {
-                id: String(req.mentor.id || ''),
-                name: req.mentor.name || '',
-                email: req.mentor.email || ''
+                id: String(uploader.id || ''),
+                name: uploader.name || '',
+                email: uploader.email || ''
               },
-              sourceFilename: record.sourceFilename || req.file.originalname
+              sourceFilename:
+                record.sourceFilename || req.file.originalname
             }
           },
           upsert: true
         }
       }));
 
-      await BeltTestRecord.bulkWrite(operations, { ordered: false });
+      await BeltTestRecord.bulkWrite(
+        operations,
+        { ordered: false }
+      );
 
       const allRecords = await BeltTestRecord.find({}).lean();
 
       cleanedData = await runPythonAggregation(allRecords);
 
-      
-// Reconcile students only within the squads represented in
-// the canonical belt-test dataset. Preserve unrelated students.
-const canonicalStudents = cleanedData.cleanedStudents || [];
+      // Reconcile students only within the squads represented in
+      // the canonical belt-test dataset. Preserve unrelated students.
+      const canonicalStudents = cleanedData.cleanedStudents || [];
 
-if (canonicalStudents.length > 0) {
-  const canonicalStudentIds = canonicalStudents.map(
-    (student) => student.studentId
-  );
+      if (canonicalStudents.length > 0) {
+        const canonicalStudentIds = canonicalStudents.map(
+          (student) => student.studentId
+        );
 
-  const canonicalBatches = [
-    ...new Set(
-      canonicalStudents
-        .map((student) => student.batch)
-        .filter(Boolean)
-    )
-  ];
+        const canonicalBatches = [
+          ...new Set(
+            canonicalStudents
+              .map((student) => student.batch)
+              .filter(Boolean)
+          )
+        ];
 
-  if (canonicalBatches.length > 0) {
-    await Student.deleteMany({
-      batch: { $in: canonicalBatches },
-      studentId: { $nin: canonicalStudentIds }
-    });
-  }
+        if (canonicalBatches.length > 0) {
+          await Student.deleteMany({
+            batch: { $in: canonicalBatches },
+            studentId: { $nin: canonicalStudentIds }
+          });
+        }
 
-  // Upsert the current canonical students without overwriting
-  // existing mentor assignments.
-  await saveStudents(
-    canonicalStudents,
-    req.mentor.name,
-    true
-  );
-}
-
+        // Upsert canonical students without overwriting
+        // existing mentor assignments.
+        await saveStudents(
+          canonicalStudents,
+          uploader.name || '',
+          true
+        );
+      }
     } else {
       // Existing CSV/XLS/XLSX upload behavior remains unchanged.
       await saveStudents(
         cleanedData.cleanedStudents,
-        req.mentor.name,
+        uploader.name || '',
         false
       );
     }
@@ -220,7 +237,9 @@ if (canonicalStudents.length > 0) {
       historyId: historyEntry._id
     });
   } catch (error) {
-    await markHistoryFailed(historyEntry, error).catch(() => undefined);
+    await markHistoryFailed(historyEntry, error).catch(
+      () => undefined
+    );
 
     return res.status(500).json({
       success: false,
@@ -274,10 +293,14 @@ const deleteUploadHistory = async (req, res) => {
       });
     }
 
-    await UploadHistory.deleteOne({ _id: historyEntry._id });
+    await UploadHistory.deleteOne({
+      _id: historyEntry._id
+    });
 
     if (historyEntry.filePath) {
-      await fs.unlink(historyEntry.filePath).catch(() => undefined);
+      await fs.unlink(historyEntry.filePath).catch(
+        () => undefined
+      );
     }
 
     return res.status(200).json({
