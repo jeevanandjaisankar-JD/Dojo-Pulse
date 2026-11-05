@@ -52,7 +52,32 @@ const googleLogin = async (req, res) => {
       });
     }
 
-    const identity = classifyKalviumEmail(payload.email);
+    const normalizedEmail = payload.email.trim().toLowerCase();
+
+    // Shared team test mentor: staging environment only.
+    const isStaging =
+      process.env.APP_ENV === 'staging';
+
+    const isTeamTestMentorEnabled =
+      process.env.ENABLE_TEAM_TEST_MENTOR === 'true';
+
+    const testMentorEmail = (
+      process.env.TEAM_TEST_MENTOR_EMAIL || ''
+    ).trim().toLowerCase();
+
+    const isTeamTestMentor =
+      isStaging &&
+      isTeamTestMentorEnabled &&
+      testMentorEmail.length > 0 &&
+      normalizedEmail === testMentorEmail;
+
+    const identity = isTeamTestMentor
+      ? {
+          email: normalizedEmail,
+          role: 'mentor',
+          squad: null
+        }
+      : classifyKalviumEmail(normalizedEmail);
 
     if (!identity) {
       return res.status(403).json({
@@ -91,21 +116,19 @@ const googleLogin = async (req, res) => {
       if (!user.googleId) {
         user.googleId = payload.sub;
       }
-    
-      if (!user.name && payload.name) {
-       user.name = payload.name;
-      }
-     // Google has verified this email.
-      
-      await user.save();
 
+      if (!user.name && payload.name) {
+        user.name = payload.name;
+      }
+
+      await user.save();
     } else {
       user = await User.create({
         email: identity.email,
         name: payload.name || identity.email.split('@')[0],
         role: identity.role,
         squad: identity.squad,
-        googleId: payload.sub        
+        googleId: payload.sub
       });
     }
 
