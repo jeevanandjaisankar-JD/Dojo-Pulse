@@ -19,6 +19,7 @@ const UploadHistorySchema = new mongoose.Schema({
   },
   rowsProcessed: { type: Number, default: 0 },
   summary: {
+    sourceRecords: { type: Number, default: 0 },
     totalStudents: { type: Number, default: 0 },
     totalSlotsEvaluated: { type: Number, default: 0 },
     improved: { type: Number, default: 0 },
