@@ -63,6 +63,7 @@ export const getImprovementsAnalytics = async () => {
 // Upload APIs
 export const uploadDojoFile = async (formData) => {
   const res = await api.post('/uploads', formData, {
+    timeout: 120000, // Set a longer timeout for file uploads
     headers: {
       'Content-Type': 'multipart/form-data'
     }
