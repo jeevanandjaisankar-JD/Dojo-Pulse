@@ -4,30 +4,24 @@ import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 
 export default function Layout() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(256);
 
   return (
-    <div className="min-h-screen bg-[#F7F9FC]">
-      {/* Navbar
-          z-50 keeps it above the fixed sidebar
-      */}
+    <div
+      className="min-h-screen bg-[#F7F9FC]"
+      style={{ "--sidebar-width": sidebarExpanded ? `${sidebarWidth}px` : "76px" }}
+    >
       <Navbar />
 
-      {/* Sidebar
-          Fixed from top:0 and z-40.
-          Navbar visually overlaps it.
-      */}
       <Sidebar
-        collapsed={sidebarCollapsed}
-        setCollapsed={setSidebarCollapsed}
+        expanded={sidebarExpanded}
+        setExpanded={setSidebarExpanded}
+        width={sidebarWidth}
+        setWidth={setSidebarWidth}
       />
 
-      {/* Main Content */}
-      <main
-        className={`min-w-0 overflow-auto p-4 pb-24 transition-all duration-300 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8 ${
-          sidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
-        }`}
-      >
+      <main className="min-w-0 overflow-auto p-4 pb-24 transition-[margin-left] duration-200 sm:p-6 sm:pb-24 lg:ml-[var(--sidebar-width)] lg:p-8 lg:pb-8">
         <Outlet />
       </main>
     </div>
