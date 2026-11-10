@@ -19,7 +19,8 @@ const normalizeStatus = (value) =>
   String(value || '')
     .trim()
     .toUpperCase()
-    .replace(/[\\s-]+/g, '_');
+    .replaceAll(' ', '_')
+    .replaceAll('-', '_');
 
 const getLatestTestStatus = (student, latestTestResults) => {
   const email = normalizeEmail(student.email);
