@@ -91,15 +91,13 @@ const getMetricLabel = (key) => {
   return humanize(key);
 };
 
-const getTileRoute = (label) => {
-  const normalized = String(label)
-    .toLowerCase()
-    .replace(/_/g, ' ');
+const getTileRoute = (metricKey) => {
+  const normalized = String(metricKey)
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .toLowerCase();
 
-  if (
-    normalized.includes('improved') &&
-    !normalized.includes('not')
-  ) {
+  if (normalized.includes('improved') && !normalized.includes('not')) {
     return '/students?filter=improved';
   }
 

@@ -171,11 +171,6 @@ export default function Dashboard() {
       value: stats?.totalSlotsHappened ?? 0,
       tone: 'blue',
     },
-    {
-      label: 'Active Languages',
-      value: stats?.activeLanguagesCount ?? 0,
-      tone: 'amber',
-    },
   ];
 
   // Real language data from stats.languages
@@ -299,16 +294,26 @@ export default function Dashboard() {
           ))
         ) : (
           kpis.map((item, index) => (
-            <StatCard
+            <div
               key={item.label}
-              label={item.label}
-              value={item.value}
-              icon={BarChart3}
-              tone={
-                item.tone ??
-                TONE_CYCLE[index % TONE_CYCLE.length]
+              className={
+                index === 4
+                  ? 'xl:col-start-2'
+                  : index === 5
+                    ? 'xl:col-start-3'
+                    : ''
               }
-            />
+            >
+              <StatCard
+                label={item.label}
+                value={item.value}
+                icon={BarChart3}
+                tone={
+                  item.tone ??
+                  TONE_CYCLE[index % TONE_CYCLE.length]
+                }
+              />
+            </div>
           ))
         )}
 
