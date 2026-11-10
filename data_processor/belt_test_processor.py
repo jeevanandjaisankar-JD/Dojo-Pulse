@@ -25,6 +25,28 @@ LANGUAGES = {
 }
 
 
+def _first_valid_timestamp(*values):
+    """
+    Return the first parseable timestamp in priority order.
+
+    An invalid non-empty preferred timestamp must not block fallback to
+    calculatedEndTime or startTime.
+    """
+    for value in values:
+        if value is None:
+            continue
+
+        candidate = str(value).strip()
+        if not candidate:
+            continue
+
+        parsed = pd.to_datetime(candidate, errors="coerce", utc=True)
+        if not pd.isna(parsed):
+            return candidate
+
+    return ""
+
+
 def _parse_levels(value, column_name, row_number, require_all=False):
     """Parse and validate a JSON object containing belt levels."""
     try:
@@ -184,11 +206,10 @@ def aggregate_records(records):
         email = str(record["email"]).strip().lower()
         name = str(record["studentName"]).strip()
 
-        timestamp = (
-            record.get("beltTestUpdatedAt")
-            or record.get("calculatedEndTime")
-            or record.get("startTime")
-            or ""
+        timestamp = _first_valid_timestamp(
+            record.get("beltTestUpdatedAt"),
+            record.get("calculatedEndTime"),
+            record.get("startTime"),
         )
 
         initial = record["initialBeltLevels"]

@@ -75,6 +75,22 @@ function DataTable({ title, rows }) {
   );
 }
 
+const getMetricLabel = (key) => {
+  if ([
+    'notImprovedCount',
+    'notImprovedStudents',
+    'notImproved',
+  ].includes(key)) {
+    return 'Needs Attention';
+  }
+
+  if (key === 'improvedCount') {
+    return 'Improved Students';
+  }
+
+  return humanize(key);
+};
+
 const getTileRoute = (label) => {
   const normalized = String(label)
     .toLowerCase()
@@ -90,6 +106,7 @@ const getTileRoute = (label) => {
   if (
     normalized.includes('not improved') ||
     normalized.includes('no improvement') ||
+    normalized.includes('needs attention') ||
     normalized.includes('attention')
   ) {
     return '/students?filter=attention';
@@ -205,7 +222,7 @@ export default function Improvements() {
                   className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40"
                 >
                   <StatCard
-                    label={humanize(key)}
+                    label={getMetricLabel(key)}
                     value={fmtVal(value)}
                     icon={TrendingUp}
                     tone={

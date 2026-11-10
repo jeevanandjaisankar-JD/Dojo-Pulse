@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const Student = require('../models/Student');
+const BeltTestRecord = require('../models/BeltTestRecord');
+const { buildLatestTestResults } = require('../services/analyticsService');
 
 const ALLOWED_SORT_FIELDS = new Set([
   'name',
@@ -10,7 +12,48 @@ const ALLOWED_SORT_FIELDS = new Set([
   'improvementStatus'
 ]);
 
-/** List students with server-side search, status filter, and safe sorting. */
+const normalizeEmail = (value) =>
+  String(value || '').trim().toLowerCase();
+
+const normalizeStatus = (value) =>
+  String(value || '')
+    .trim()
+    .toUpperCase()
+    .replaceAll(' ', '_')
+    .replaceAll('-', '_');
+
+const getLatestTestStatus = (student, latestTestResults) => {
+  const email = normalizeEmail(student.email);
+  const latestTest = latestTestResults.get(email);
+
+  // If canonical test records exist for this student, they are the source
+  // of truth. This intentionally overrides a potentially stale Student field.
+  if (latestTest) {
+    return latestTest.improvedLanguages.size > 0
+      ? 'IMPROVED'
+      : 'NO_IMPROVEMENT';
+  }
+
+  // Preserve compatibility for students created before canonical
+  // BeltTestRecord storage was introduced.
+  return normalizeStatus(student.improvementStatus) === 'IMPROVED'
+    ? 'IMPROVED'
+    : 'NO_IMPROVEMENT';
+};
+
+const compareValues = (first, second) => {
+  if (typeof first === 'number' && typeof second === 'number') {
+    return first - second;
+  }
+
+  return String(first ?? '').localeCompare(
+    String(second ?? ''),
+    undefined,
+    { numeric: true, sensitivity: 'base' }
+  );
+};
+
+/** List students with latest-test status, search, filtering, and sorting. */
 const getStudents = async (req, res) => {
   try {
     if (Student.db?.readyState !== 1) {
@@ -19,6 +62,7 @@ const getStudents = async (req, res) => {
         message: 'MongoDB is unavailable. Student records cannot be loaded yet.'
       });
     }
+
     const {
       search = '',
       sort = 'currentBeltLevel',
@@ -26,25 +70,67 @@ const getStudents = async (req, res) => {
       status = 'ALL'
     } = req.query;
 
-    const filter = {};
     const trimmedSearch = String(search).trim();
+
+    // Status is derived from canonical test records, so load the student
+    // cohort and records together before applying search and status filters.
+    const [studentDocs, beltTestRecords] = await Promise.all([
+      Student.find({}).lean(),
+      BeltTestRecord.find({}).lean()
+    ]);
+
+    const latestTestResults = buildLatestTestResults(beltTestRecords);
+
+    let students = studentDocs.map((student) => ({
+      ...student,
+      improvementStatus: getLatestTestStatus(student, latestTestResults)
+    }));
+
     if (trimmedSearch) {
-      const safeSearch = trimmedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      filter.$or = [
-        { name: { $regex: safeSearch, $options: 'i' } },
-        { email: { $regex: safeSearch, $options: 'i' } },
-        { batch: { $regex: safeSearch, $options: 'i' } }
-      ];
-    }
-    if (status === 'IMPROVED' || status === 'NO_IMPROVEMENT') {
-      filter.improvementStatus = status;
+      const query = trimmedSearch.toLowerCase();
+      students = students.filter((student) =>
+        [student.name, student.email, student.batch].some((value) =>
+          String(value || '').toLowerCase().includes(query)
+        )
+      );
     }
 
-    const sortField = ALLOWED_SORT_FIELDS.has(sort) ? sort : 'currentBeltLevel';
+    const requestedStatus = normalizeStatus(status);
+    if (requestedStatus === 'IMPROVED') {
+      students = students.filter(
+        (student) => student.improvementStatus === 'IMPROVED'
+      );
+    } else if (
+      ['NO_IMPROVEMENT', 'NEEDS_ATTENTION', 'ATTENTION'].includes(requestedStatus)
+    ) {
+      students = students.filter(
+        (student) => student.improvementStatus === 'NO_IMPROVEMENT'
+      );
+    }
+
+    const sortField = ALLOWED_SORT_FIELDS.has(sort)
+      ? sort
+      : 'currentBeltLevel';
     const sortDirection = order === 'asc' ? 1 : -1;
-    const students = await Student.find(filter).sort({ [sortField]: sortDirection, name: 1 }).lean();
 
-    return res.status(200).json({ success: true, total: students.length, students });
+    students.sort((first, second) => {
+      const primary = compareValues(
+        first[sortField],
+        second[sortField]
+      );
+
+      if (primary !== 0) {
+        return primary * sortDirection;
+      }
+
+      return compareValues(first.name, second.name);
+    });
+
+    return res.status(200).json({
+      success: true,
+      total: students.length,
+      students
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
