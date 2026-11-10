@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { getToken } from './authService';
 
@@ -37,6 +36,11 @@ export const getMentorProfile = async () => {
   return res.data;
 };
 
+export const updateMentorProfile = async (profile) => {
+  const res = await api.put('/auth/profile', profile);
+  return res.data;
+};
+
 // Dashboard APIs
 export const getDashboardStats = async () => {
   const res = await api.get('/dashboard/stats');
@@ -63,7 +67,7 @@ export const getImprovementsAnalytics = async () => {
 // Upload APIs
 export const uploadDojoFile = async (formData) => {
   const res = await api.post('/uploads', formData, {
-    timeout: 120000, // Set a longer timeout for file uploads
+    timeout: 120000,
     headers: {
       'Content-Type': 'multipart/form-data'
     }
