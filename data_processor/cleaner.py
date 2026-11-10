@@ -33,6 +33,19 @@ COLUMN_ALIASES = {
 BASE_LANGUAGES = ["Python", "Node.js", "Java", "C++"]
 
 
+def IsImproved(StudentResults, language):
+    """Check whether a language improved in the student's latest test."""
+    result = StudentResults.get(language)
+
+    if not result:
+        return False
+
+    initial_level = int(result.get("initial", 0))
+    final_level = int(result.get("final", 0))
+
+    return final_level > initial_level
+
+
 def read_uploaded_file(file_path):
     """Read uploaded CSV, XLS or XLSX file."""
     file_path = Path(file_path)
@@ -163,7 +176,8 @@ def clean_data(df):
 
     # Convert slot closing time into datetime
     if "workout_updated_at" not in df.columns:
-        df["workout_updated_at"] = pd.Timestamp.now(tz="UTC")
+        df["workout_updated_at"] = pd.NaT
+
     else:
         df["workout_updated_at"] = pd.to_datetime(
             df["workout_updated_at"], errors="coerce", utc=True
@@ -245,7 +259,17 @@ def aggregate_pipeline(df, slot_number=1):
         is_improved = belts_earned > 0
         status = "IMPROVED" if is_improved else "NO_IMPROVEMENT"
 
-        dt, timestamp, date_str, time_str = format_datetime_info(row.get("workout_updated_at"))
+        raw_timestamp = row.get("workout_updated_at")
+        valid_dt = pd.to_datetime(
+            raw_timestamp,
+            errors="coerce",
+            utc=True
+        )
+
+        has_valid_timestamp = not pd.isna(valid_dt)
+        dt, timestamp, date_str, time_str = format_datetime_info(
+            raw_timestamp
+        )
 
         if language not in language_stats:
             language_stats[language] = {"slots": 0, "beltsEarned": 0, "improvedStudents": 0}
@@ -272,6 +296,7 @@ def aggregate_pipeline(df, slot_number=1):
             "timestamp": timestamp,
             "date": date_str,
             "time": time_str,
+            "validDt": valid_dt if has_valid_timestamp else None,
         })
 
     # Group attempts by student
@@ -301,7 +326,39 @@ def aggregate_pipeline(df, slot_number=1):
         total_belts_earned = sum(a["beltsEarned"] for a in attempts)
         total_belts_overall += total_belts_earned
 
-        is_student_improved = total_belts_earned > 0
+
+        # Determine the student's latest valid test.
+        dated_attempts = [
+            attempt for attempt in attempts
+            if attempt["validDt"] is not None
+        ]
+
+        StudentResults = {}
+
+        if dated_attempts:
+            latest_test_date = max(
+                attempt["validDt"] for attempt in dated_attempts
+            )
+
+            latest_test_attempts = [
+                attempt for attempt in dated_attempts
+                if attempt["validDt"] == latest_test_date
+            ]
+
+            # Build results independently for each language.
+            for attempt in latest_test_attempts:
+                StudentResults[attempt["language"]] = {
+                    "initial": attempt["verifiedBelts"],
+                    "final": attempt["beltLevel"],
+                }
+
+        language_improvements = {
+            language: IsImproved(StudentResults, language)
+            for language in BASE_LANGUAGES
+        }
+
+        is_student_improved = any(language_improvements.values())
+
         if is_student_improved:
             improved_students_count += 1
             improvement_status = "IMPROVED"
@@ -402,4 +459,4 @@ def process_pipeline(file_path, slot_number=1):
     """End-to-end pipeline: load file, clean columns, and aggregate for backend."""
     df = read_uploaded_file(file_path)
     cleaned_df = clean_data(df)
-    return aggregate_pipeline(cleaned_df, slot_number=slot_number)
+    return aggregate_pipeline(cleaned_df, slot_number=slot_number)
