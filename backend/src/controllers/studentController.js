@@ -218,7 +218,7 @@ const getStudentById = async (req, res) => {
     const batch = student.batch || (
       latestRecord?.squadNumber ? 'Squad ' + latestRecord.squadNumber : ''
     );
-    const squadMatch = String(batch).match(/(?:squad\\s*|s\\.?)?(\\d+)/i);
+    const squadMatch = String(batch).match(/(?:squad\s*|s\.?)?(\d+)/i);
     const squadNumber = squadMatch?.[1] || latestRecord?.squadNumber || '';
 
     const studentDetails = {
