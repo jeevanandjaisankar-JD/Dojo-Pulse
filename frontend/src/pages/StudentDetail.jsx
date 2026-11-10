@@ -92,7 +92,8 @@ export default function StudentDetail() {
   }, [id]);
 
   const beltHistory = toList(student?.beltHistory ?? student?.belt_history);
-  // Unique language + level entries are the source of truth for the totals.\n  const totalBelts = beltHistory.length;
+  // Unique language + level entries are the source of truth for the totals.
+  const totalBelts = beltHistory.length;
   const languageCounts = useMemo(() => {
     const counts = Object.fromEntries(LANGUAGE_TILES.map(({ key }) => [key, 0]));
     beltHistory.forEach((entry) => {
