@@ -41,6 +41,35 @@ const getLatestTestStatus = (student, latestTestResults) => {
     : 'NO_IMPROVEMENT';
 };
 
+const BELT_LANGUAGE_FIELDS = { Python: 'python', 'Node.js': 'nodejs', Java: 'java', 'C++': 'cpp' };
+
+const buildUniqueBeltHistory = (student, records) => {
+  const history = new Map();
+  const email = normalizeEmail(student.email);
+  records.filter((record) => normalizeEmail(record.email) === email).forEach((record) => {
+    const initial = record.initialBeltLevels || {};
+    const final = record.finalBeltLevels || {};
+    for (const [language, field] of Object.entries(BELT_LANGUAGE_FIELDS)) {
+      const from = Number(initial[field]) || 0;
+      const to = Number(final[field]) || 0;
+      for (let level = from + 1; level <= to; level += 1) {
+        history.set(language + ':' + level, { language, level });
+      }
+    }
+  });
+  if (history.size === 0) {
+    (student.sameDayProgress || []).forEach((day) => (day.attempts || []).forEach((attempt) => {
+      const from = Number(attempt.verifiedBelts) || 0;
+      const to = Number(attempt.beltLevel) || 0;
+      const language = attempt.language || 'Other';
+      for (let level = from + 1; level <= to; level += 1) history.set(language + ':' + level, { language, level });
+    }));
+  }
+  return [...history.values()].sort((a, b) =>
+    (Object.keys(BELT_LANGUAGE_FIELDS).indexOf(a.language) - Object.keys(BELT_LANGUAGE_FIELDS).indexOf(b.language)) || a.level - b.level
+  );
+};
+
 const compareValues = (first, second) => {
   if (typeof first === 'number' && typeof second === 'number') {
     return first - second;
@@ -81,72 +110,9 @@ const getStudents = async (req, res) => {
 
     const latestTestResults = buildLatestTestResults(beltTestRecords);
 
-    // Rebuild the unique belt history from canonical raw test records.
-    // The key is language + level, preventing duplicate CSV uploads or
-    // repeated test rows from counting the same earned belt twice.
-    const beltHistoryByEmail = new Map();
-    const languageFields = {
-      Python: 'python',
-      'Node.js': 'nodejs',
-      Java: 'java',
-      'C++': 'cpp'
-    };
-
-    for (const record of beltTestRecords) {
-      const email = normalizeEmail(record.email);
-      if (!email) continue;
-      if (!beltHistoryByEmail.has(email)) {
-        beltHistoryByEmail.set(email, new Map());
-      }
-      const history = beltHistoryByEmail.get(email);
-      const initial = record.initialBeltLevels || {};
-      const final = record.finalBeltLevels || {};
-
-      for (const [language, field] of Object.entries(languageFields)) {
-        const initialLevel = Number(initial[field]) || 0;
-        const finalLevel = Number(final[field]) || 0;
-        for (let level = initialLevel + 1; level <= finalLevel; level += 1) {
-          history.set(`${language}:${level}`, { language, level });
-        }
-      }
-    }
-
     let students = studentDocs.map((student) => {
-      const canonicalHistory = beltHistoryByEmail.get(normalizeEmail(student.email));
-      const historySource = canonicalHistory
-        ? [...canonicalHistory.values()]
-        : (student.sameDayProgress || []).flatMap((day) =>
-          (day.attempts || []).flatMap((attempt) => {
-            const initialLevel = Number(attempt.verifiedBelts) || 0;
-            const finalLevel = Number(attempt.beltLevel) || 0;
-            return Array.from(
-              { length: Math.max(0, finalLevel - initialLevel) },
-              (_, index) => ({
-                language: attempt.language || 'Other',
-                level: initialLevel + index + 1
-              })
-            );
-          })
-        );
-
-      const uniqueHistory = new Map(
-        historySource.map((entry) => [
-          `${entry.language}:${entry.level}`,
-          entry
-        ])
-      );
-      const beltHistory = [...uniqueHistory.values()].sort((first, second) =>
-        Object.keys(languageFields).indexOf(first.language) -
-          Object.keys(languageFields).indexOf(second.language) ||
-        first.level - second.level
-      );
-
-      return {
-        ...student,
-        beltHistory,
-        totalUniqueBelts: beltHistory.length,
-        improvementStatus: getLatestTestStatus(student, latestTestResults)
-      };
+      const beltHistory = buildUniqueBeltHistory(student, beltTestRecords);
+      return { ...student, beltHistory, totalUniqueBelts: beltHistory.length, improvementStatus: getLatestTestStatus(student, latestTestResults) };
     });
 
     if (trimmedSearch) {
@@ -225,7 +191,19 @@ const getStudentById = async (req, res) => {
       });
     }
 
-    return res.status(200).json({ success: true, student });
+    const beltTestRecords = await BeltTestRecord.find({ email: normalizeEmail(student.email) }).sort({ createdAt: 1 }).lean();
+    const beltHistory = buildUniqueBeltHistory(student, beltTestRecords);
+    const latestRecord = beltTestRecords[beltTestRecords.length - 1];
+    const squadNumber = latestRecord?.squadNumber || '';
+    const studentDetails = {
+      ...student,
+      name: student.name || latestRecord?.studentName || '',
+      squadNumber,
+      batch: squadNumber ? 'Squad ' + squadNumber : (student.batch || ''),
+      beltHistory,
+      totalUniqueBelts: beltHistory.length
+    };
+    return res.status(200).json({ success: true, student: studentDetails });
   } catch (error) {
     return res.status(500).json({
       success: false,
