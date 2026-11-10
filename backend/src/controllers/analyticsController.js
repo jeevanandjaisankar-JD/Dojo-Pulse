@@ -1,5 +1,9 @@
 const Student = require('../models/Student');
-const { BASE_LANGUAGES, buildAnalytics } = require('../services/analyticsService');
+const BeltTestRecord = require('../models/BeltTestRecord');
+const {
+  BASE_LANGUAGES,
+  buildAnalytics
+} = require('../services/analyticsService');
 
 /** Return live improvement, language, and historical-period analytics. */
 const getImprovementsAnalytics = async (req, res) => {
@@ -10,8 +14,13 @@ const getImprovementsAnalytics = async (req, res) => {
         message: 'MongoDB is unavailable. Improvement analytics cannot be loaded yet.'
       });
     }
-    const students = await Student.find({}).lean();
-    const analytics = buildAnalytics(students);
+
+    const [students, beltTestRecords] = await Promise.all([
+      Student.find({}).lean(),
+      BeltTestRecord.find({}).lean()
+    ]);
+
+    const analytics = buildAnalytics(students, beltTestRecords);
 
     return res.status(200).json({
       success: true,
