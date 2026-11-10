@@ -133,7 +133,7 @@ export default function StudentDetail() {
   const percentage = Math.min(100, Math.round((totalBelts / ELIGIBILITY_BELTS) * 100));
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-8rem)] min-h-[520px] max-w-[1600px] flex-col gap-2 overflow-hidden">
+    <div className="mx-auto flex h-[calc(100dvh-8rem)] min-h-0 max-w-[1600px] flex-col gap-2 overflow-hidden">
       <div className="flex shrink-0 items-center justify-between">
         <Link to="/students" className="inline-flex items-center gap-2 text-sm font-semibold text-[#64748B] hover:text-[#2563EB]"><ArrowLeft size={16} /> Back to students</Link>
         <div className="flex items-center gap-2">
