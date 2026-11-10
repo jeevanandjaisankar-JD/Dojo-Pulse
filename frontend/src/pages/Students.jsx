@@ -131,6 +131,8 @@ export default function Students() {
   const [query, setQuery] =
     useState('');
 
+  const [sortOrder, setSortOrder] = useState('default');
+
   const initialFilter = normalizeStudentFilter(
     searchParams.get('filter')
   );
@@ -218,7 +220,7 @@ export default function Students() {
         .trim()
         .toLowerCase();
 
-    return students.filter(
+    const matchingStudents = students.filter(
       (student) => {
         const name =
           sname(student)
@@ -266,10 +268,19 @@ export default function Students() {
         }
       }
     );
+
+    if (sortOrder === 'az') {
+      matchingStudents.sort((first, second) =>
+        sname(first).localeCompare(sname(second), undefined, { sensitivity: 'base' })
+      );
+    }
+
+    return matchingStudents;
   }, [
     students,
     query,
     filter,
+    sortOrder,
   ]);
 
   /*
@@ -374,8 +385,12 @@ export default function Students() {
             />
           </div>
 
-          {/* Filter */}
+          {/* Filters and sorting */}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} aria-label="Sort students" className="input-base w-full sm:w-40">
+              <option value="default">Default order</option>
+              <option value="az">Name · A–Z</option>
+            </select>
             <select
               value={filter}
               onChange={(event) =>

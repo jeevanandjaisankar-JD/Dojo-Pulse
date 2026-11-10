@@ -5,7 +5,7 @@ import { unwrap, humanize } from '../components/StatCard';
 import { useAuth } from '../context/AuthContext';
 
 export default function Profile() {
-  const { logout } = useAuth();
+  const { logout, user: authUser } = useAuth();
 
   const [mentor, setMentor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +24,7 @@ export default function Profile() {
   }, []);
 
   const name = mentor?.name ?? mentor?.full_name ?? mentor?.fullName ?? '';
-  const photo = mentor?.avatar ?? mentor?.avatar_url ?? mentor?.avatarUrl ?? mentor?.photo ?? mentor?.picture;
+  const photo = mentor?.avatar ?? mentor?.avatar_url ?? mentor?.avatarUrl ?? mentor?.photo ?? mentor?.picture ?? authUser?.avatar ?? authUser?.avatar_url ?? authUser?.avatarUrl ?? authUser?.photo ?? authUser?.picture ?? authUser?.photoURL ?? authUser?.imageUrl;
   const role = mentor?.role ?? mentor?.title ?? '';
   const fields = Object.entries(mentor || {}).filter(
     ([k, v]) => ['string', 'number'].includes(typeof v) && !/^(id|_id|name|full_name|fullName|avatar|avatar_url|avatarUrl|photo|picture|role|title|password|token)$/i.test(k)
