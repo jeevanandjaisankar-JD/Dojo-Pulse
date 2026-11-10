@@ -72,7 +72,7 @@ const normalizeStudentFilter = (value) => {
   const normalized = String(value || 'all')
     .trim()
     .toLowerCase()
-    .replace(/[\\s_]+/g, '-');
+    .replace(/[\s_]+/g, '-');
 
   if ([
     'attention',
@@ -90,7 +90,7 @@ const getImprovementStatus = (student) =>
   String(student?.improvementStatus || '')
     .trim()
     .toUpperCase()
-    .replace(/[\\s-]+/g, '_');
+    .replace(/[\s-]+/g, '_');
 
 const isimproved = (student) =>
   getImprovementStatus(student) === 'IMPROVED';
