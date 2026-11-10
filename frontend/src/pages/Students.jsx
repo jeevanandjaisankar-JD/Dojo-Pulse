@@ -18,7 +18,6 @@ import {
 import { getStudents } from '../services/api';
 
 import { toList } from '../components/StatCard';
-import { BeltBadge } from '../components/BeltChart';
 
 const sid = (student) =>
   student.id ??
