@@ -70,6 +70,21 @@ const buildUniqueBeltHistory = (student, records) => {
   );
 };
 
+const getRecordTimestamp = (record) => {
+  for (const value of [record.beltTestUpdatedAt, record.calculatedEndTime, record.startTime]) {
+    if (!value || !String(value).trim()) continue;
+    const parsed = Date.parse(String(value));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  const createdAt = Date.parse(record.createdAt || '');
+  return Number.isFinite(createdAt) ? createdAt : 0;
+};
+
+const getLatestStudentRecord = (records = []) =>
+  [...records].sort((first, second) =>
+    getRecordTimestamp(first) - getRecordTimestamp(second)
+  ).at(-1);
+
 const compareValues = (first, second) => {
   if (typeof first === 'number' && typeof second === 'number') {
     return first - second;
@@ -191,15 +206,26 @@ const getStudentById = async (req, res) => {
       });
     }
 
-    const beltTestRecords = await BeltTestRecord.find({ email: normalizeEmail(student.email) }).sort({ createdAt: 1 }).lean();
+    const beltTestRecords = await BeltTestRecord.find({
+      email: normalizeEmail(student.email)
+    }).lean();
+
     const beltHistory = buildUniqueBeltHistory(student, beltTestRecords);
-    const latestRecord = beltTestRecords[beltTestRecords.length - 1];
-    const squadNumber = latestRecord?.squadNumber || '';
+    const latestRecord = getLatestStudentRecord(beltTestRecords);
+
+    // Match the canonical student-list data first; use raw test records only
+    // when a field is missing from the aggregated Student document.
+    const batch = student.batch || (
+      latestRecord?.squadNumber ? 'Squad ' + latestRecord.squadNumber : ''
+    );
+    const squadMatch = String(batch).match(/(?:squad\\s*|s\\.?)?(\\d+)/i);
+    const squadNumber = squadMatch?.[1] || latestRecord?.squadNumber || '';
+
     const studentDetails = {
       ...student,
       name: student.name || latestRecord?.studentName || '',
+      batch,
       squadNumber,
-      batch: squadNumber ? 'Squad ' + squadNumber : (student.batch || ''),
       beltHistory,
       totalUniqueBelts: beltHistory.length
     };
