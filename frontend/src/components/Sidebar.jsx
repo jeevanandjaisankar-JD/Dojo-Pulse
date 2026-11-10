@@ -37,7 +37,12 @@ export default function Sidebar({ expanded, setExpanded, width, setWidth }) {
   return (
     <>
       <aside
-        onMouseEnter={() => setExpanded(true)}
+        onMouseEnter={(event) => {
+          const currentWidth = expanded ? width : 76;
+          // Keep the resize edge reachable while collapsed; hovering the
+          // interior expands the menu, while hovering the edge shows resize.
+          if (Math.abs(event.clientX - currentWidth) > 8) setExpanded(true);
+        }}
         onMouseLeave={() => {
           if (!isResizing) setExpanded(false);
         }}
@@ -85,7 +90,7 @@ export default function Sidebar({ expanded, setExpanded, width, setWidth }) {
           onPointerMove={handleResize}
           onPointerUp={handleResizeEnd}
           onPointerCancel={handleResizeEnd}
-          className="absolute right-0 top-0 z-50 h-full w-1.5 touch-none cursor-ew-resize bg-transparent transition-colors hover:bg-[#2563EB]/30"
+          className="absolute -right-1 top-0 z-50 h-full w-2 touch-none cursor-ew-resize bg-transparent transition-colors hover:bg-[#2563EB]/30"
         />
       </aside>
 
