@@ -136,7 +136,7 @@ const buildAnalytics = (students = [], beltTestRecords = []) => {
     for (const day of student.sameDayProgress || []) {
       const period = String(day.date || '').slice(0, 7);
 
-      if (/^\\d{4}-\\d{2}$/.test(period)) {
+      if (/^\d{4}-\d{2}$/.test(period)) {
         if (!periods.has(period)) {
           periods.set(period, {
             slotsAttempted: 0,
