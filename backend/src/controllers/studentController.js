@@ -70,22 +70,12 @@ const getStudents = async (req, res) => {
       status = 'ALL'
     } = req.query;
 
-    const filter = {};
     const trimmedSearch = String(search).trim();
 
-    if (trimmedSearch) {
-      const safeSearch = trimmedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\      const safeSearch = trimmedSearch.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');');
-      filter.$or = [
-        { name: { $regex: safeSearch, $options: 'i' } },
-        { email: { $regex: safeSearch, $options: 'i' } },
-        { batch: { $regex: safeSearch, $options: 'i' } }
-      ];
-    }
-
-    // The improvement status is computed from canonical test records below,
-    // so it must not be filtered using the cached MongoDB Student field.
+    // Status is derived from canonical test records, so load the student
+    // cohort and records together before applying search and status filters.
     const [studentDocs, beltTestRecords] = await Promise.all([
-      Student.find(filter).lean(),
+      Student.find({}).lean(),
       BeltTestRecord.find({}).lean()
     ]);
 
@@ -95,6 +85,15 @@ const getStudents = async (req, res) => {
       ...student,
       improvementStatus: getLatestTestStatus(student, latestTestResults)
     }));
+
+    if (trimmedSearch) {
+      const query = trimmedSearch.toLowerCase();
+      students = students.filter((student) =>
+        [student.name, student.email, student.batch].some((value) =>
+          String(value || '').toLowerCase().includes(query)
+        )
+      );
+    }
 
     const requestedStatus = normalizeStatus(status);
     if (requestedStatus === 'IMPROVED') {
