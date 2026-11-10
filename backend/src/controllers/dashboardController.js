@@ -1,4 +1,5 @@
 const Student = require('../models/Student');
+const BeltTestRecord = require('../models/BeltTestRecord');
 const { buildAnalytics } = require('../services/analyticsService');
 
 /** Return live cohort-level metrics for the dashboard. */
@@ -10,8 +11,13 @@ const getDashboardStats = async (req, res) => {
         message: 'MongoDB is unavailable. Dashboard analytics cannot be loaded yet.'
       });
     }
-    const students = await Student.find({}).lean();
-    const analytics = buildAnalytics(students);
+
+    const [students, beltTestRecords] = await Promise.all([
+      Student.find({}).lean(),
+      BeltTestRecord.find({}).lean()
+    ]);
+
+    const analytics = buildAnalytics(students, beltTestRecords);
 
     return res.status(200).json({
       success: true,
