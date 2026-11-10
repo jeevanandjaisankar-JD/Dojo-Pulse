@@ -39,6 +39,8 @@ const saveStudents = async (
       verifiedBelts: student.verifiedBelts,
       currentBeltLevel: student.currentBeltLevel,
       totalBeltsEarned: student.totalBeltsEarned,
+      beltHistory: student.beltHistory || [],
+      totalUniqueBelts: student.totalUniqueBelts ?? (student.beltHistory || []).length,
       totalSlotsAttempted: student.totalSlotsAttempted,
       improvementStatus: student.improvementStatus,
       languagesAttempted: student.languagesAttempted,

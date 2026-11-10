@@ -41,6 +41,50 @@ const getLatestTestStatus = (student, latestTestResults) => {
     : 'NO_IMPROVEMENT';
 };
 
+const BELT_LANGUAGE_FIELDS = { Python: 'python', 'Node.js': 'nodejs', Java: 'java', 'C++': 'cpp' };
+
+const buildUniqueBeltHistory = (student, records) => {
+  const history = new Map();
+  const email = normalizeEmail(student.email);
+  records.filter((record) => normalizeEmail(record.email) === email).forEach((record) => {
+    const initial = record.initialBeltLevels || {};
+    const final = record.finalBeltLevels || {};
+    for (const [language, field] of Object.entries(BELT_LANGUAGE_FIELDS)) {
+      const from = Number(initial[field]) || 0;
+      const to = Number(final[field]) || 0;
+      for (let level = from + 1; level <= to; level += 1) {
+        history.set(language + ':' + level, { language, level });
+      }
+    }
+  });
+  if (history.size === 0) {
+    (student.sameDayProgress || []).forEach((day) => (day.attempts || []).forEach((attempt) => {
+      const from = Number(attempt.verifiedBelts) || 0;
+      const to = Number(attempt.beltLevel) || 0;
+      const language = attempt.language || 'Other';
+      for (let level = from + 1; level <= to; level += 1) history.set(language + ':' + level, { language, level });
+    }));
+  }
+  return [...history.values()].sort((a, b) =>
+    (Object.keys(BELT_LANGUAGE_FIELDS).indexOf(a.language) - Object.keys(BELT_LANGUAGE_FIELDS).indexOf(b.language)) || a.level - b.level
+  );
+};
+
+const getRecordTimestamp = (record) => {
+  for (const value of [record.beltTestUpdatedAt, record.calculatedEndTime, record.startTime]) {
+    if (!value || !String(value).trim()) continue;
+    const parsed = Date.parse(String(value));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  const createdAt = Date.parse(record.createdAt || '');
+  return Number.isFinite(createdAt) ? createdAt : 0;
+};
+
+const getLatestStudentRecord = (records = []) =>
+  [...records].sort((first, second) =>
+    getRecordTimestamp(first) - getRecordTimestamp(second)
+  ).at(-1);
+
 const compareValues = (first, second) => {
   if (typeof first === 'number' && typeof second === 'number') {
     return first - second;
@@ -81,10 +125,10 @@ const getStudents = async (req, res) => {
 
     const latestTestResults = buildLatestTestResults(beltTestRecords);
 
-    let students = studentDocs.map((student) => ({
-      ...student,
-      improvementStatus: getLatestTestStatus(student, latestTestResults)
-    }));
+    let students = studentDocs.map((student) => {
+      const beltHistory = buildUniqueBeltHistory(student, beltTestRecords);
+      return { ...student, beltHistory, totalUniqueBelts: beltHistory.length, improvementStatus: getLatestTestStatus(student, latestTestResults) };
+    });
 
     if (trimmedSearch) {
       const query = trimmedSearch.toLowerCase();
@@ -162,7 +206,30 @@ const getStudentById = async (req, res) => {
       });
     }
 
-    return res.status(200).json({ success: true, student });
+    const beltTestRecords = await BeltTestRecord.find({
+      email: normalizeEmail(student.email)
+    }).lean();
+
+    const beltHistory = buildUniqueBeltHistory(student, beltTestRecords);
+    const latestRecord = getLatestStudentRecord(beltTestRecords);
+
+    // Match the canonical student-list data first; use raw test records only
+    // when a field is missing from the aggregated Student document.
+    const batch = student.batch || (
+      latestRecord?.squadNumber ? 'Squad ' + latestRecord.squadNumber : ''
+    );
+    const squadMatch = String(batch).match(/(?:squad\s*|s\.?)?(\d+)/i);
+    const squadNumber = squadMatch?.[1] || latestRecord?.squadNumber || '';
+
+    const studentDetails = {
+      ...student,
+      name: student.name || latestRecord?.studentName || '',
+      batch,
+      squadNumber,
+      beltHistory,
+      totalUniqueBelts: beltHistory.length
+    };
+    return res.status(200).json({ success: true, student: studentDetails });
   } catch (error) {
     return res.status(500).json({
       success: false,

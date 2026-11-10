@@ -413,6 +413,33 @@ def aggregate_pipeline(df, slot_number=1):
                 "attempts": formatted_attempts,
             })
 
+        # Track every distinct belt level reached in each language.
+        # A belt is identified by its language + level, so repeated CSV
+        # exports/tests never inflate the student's overall belt count.
+        belt_history_by_key = {}
+        for attempt in attempts:
+            if attempt["beltLevel"] <= attempt["verifiedBelts"]:
+                continue
+            for level in range(
+                int(attempt["verifiedBelts"]) + 1,
+                int(attempt["beltLevel"]) + 1,
+            ):
+                key = (attempt["language"], level)
+                belt_history_by_key[key] = {
+                    "language": attempt["language"],
+                    "level": level,
+                }
+
+        belt_history = sorted(
+            belt_history_by_key.values(),
+            key=lambda item: (
+                BASE_LANGUAGES.index(item["language"])
+                if item["language"] in BASE_LANGUAGES
+                else len(BASE_LANGUAGES),
+                item["level"],
+            ),
+        )
+
         cleaned_students.append({
             "studentId": sid,
             "email": sdata["email"],
@@ -421,6 +448,8 @@ def aggregate_pipeline(df, slot_number=1):
             "verifiedBelts": int(verified_belts),
             "currentBeltLevel": int(current_belt_level),
             "totalBeltsEarned": int(total_belts_earned),
+            "beltHistory": belt_history,
+            "totalUniqueBelts": int(len(belt_history)),
             "totalSlotsAttempted": int(total_slots_attempted),
             "improvementStatus": improvement_status,
             "languagesAttempted": languages_attempted,

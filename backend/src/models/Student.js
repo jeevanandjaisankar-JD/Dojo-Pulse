@@ -29,6 +29,11 @@ const SameDayProgressSchema = new mongoose.Schema({
   attempts: [SlotAttemptSchema]
 }, { _id: false });
 
+const BeltHistoryEntrySchema = new mongoose.Schema({
+  language: { type: String, required: true },
+  level: { type: Number, required: true, min: 1 }
+}, { _id: false });
+
 const StudentSchema = new mongoose.Schema({
   studentId: { type: String, required: true, unique: true, index: true },
   email: { type: String, required: true },
@@ -38,6 +43,8 @@ const StudentSchema = new mongoose.Schema({
   verifiedBelts: { type: Number, default: 0 },
   currentBeltLevel: { type: Number, default: 0 },
   totalBeltsEarned: { type: Number, default: 0 },
+  beltHistory: { type: [BeltHistoryEntrySchema], default: [] },
+  totalUniqueBelts: { type: Number, default: 0 },
   totalSlotsAttempted: { type: Number, default: 0 },
   improvementStatus: {
     type: String,

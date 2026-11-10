@@ -18,7 +18,6 @@ import {
 import { getStudents } from '../services/api';
 
 import { toList } from '../components/StatCard';
-import { BeltBadge } from '../components/BeltChart';
 
 const sid = (student) =>
   student.id ??
@@ -45,16 +44,49 @@ const slang = (student) =>
   student.primaryLanguage ??
   '';
 
-const sbelt = (student) =>
-  student.belt ??
-  student.current_belt ??
-  student.currentBelt ??
-  '';
+const sbelt = (student) => {
+  const count = student.totalUniqueBelts ??
+    student.beltHistory?.length;
+  if (Number.isFinite(Number(count))) {
+    return `${Number(count)} ${Number(count) === 1 ? 'belt' : 'belts'}`;
+  }
+  return student.belt ?? student.current_belt ?? student.currentBelt ?? '';
+};
 
 const sbatch = (student) =>
   student.batch ??
   student.squad ??
   '';
+
+/**
+ * Return the distinct, non-empty squad values present in the student data.
+ * Keep the source value intact so filtering matches the underlying records.
+ */
+export const SquadsAvailable = (data = []) => [
+  ...new Set(
+    data
+      .map((student) => String(sbatch(student) ?? '').trim())
+      .filter(Boolean)
+  ),
+].sort((first, second) =>
+  first.localeCompare(second, undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  })
+);
+
+/**
+ * Build the squad filter options from the values discovered in the data.
+ */
+export const createSquadFilters = (squads = []) =>
+  squads.map((squad) => ({
+    value: `squad:${squad}`,
+    label: /^squad\\b/i.test(squad)
+      ? squad
+      : /^\\d+$/.test(squad)
+        ? `Squad ${squad}`
+        : squad,
+  }));
 
 const slanguages = (student) => {
   if (Array.isArray(student.languagesAttempted)) {
@@ -184,6 +216,19 @@ export default function Students() {
   }, []);
 
   /*
+   * Discover squads from the loaded student records.
+   */
+  const squads = useMemo(
+    () => SquadsAvailable(students),
+    [students]
+  );
+
+  const squadFilters = useMemo(
+    () => createSquadFilters(squads),
+    [squads]
+  );
+
+  /*
    * Collect all available languages.
    */
   const languages = useMemo(() => {
@@ -242,16 +287,6 @@ export default function Students() {
           case 'attention':
             return needsAttention(student);
 
-          case 'squad138':
-            return sbatch(student)
-              .toLowerCase()
-              .includes('138');
-
-          case 'squad139':
-            return sbatch(student)
-              .toLowerCase()
-              .includes('139');
-
           case 'python':
             return slanguages(
               student
@@ -305,6 +340,17 @@ export default function Students() {
              * Example:
              * filter=language:JavaScript
              */
+            if (filter.startsWith('squad:')) {
+              const selectedSquad = filter
+                .slice('squad:'.length)
+                .trim()
+                .toLowerCase();
+
+              return String(sbatch(student) ?? '')
+                .trim()
+                .toLowerCase() === selectedSquad;
+            }
+
             if (
               filter.startsWith(
                 'language:'
@@ -463,13 +509,14 @@ export default function Students() {
                 Needs Attention
               </option>
 
-              <option value="squad138">
-                Squad 138
-              </option>
-
-              <option value="squad139">
-                Squad 139
-              </option>
+              {squadFilters.map((squad) => (
+                <option
+                  key={squad.value}
+                  value={squad.value}
+                >
+                  {squad.label}
+                </option>
+              ))}
 
               <option value="python">
                 Python
@@ -745,10 +792,10 @@ export default function Students() {
 
                         {/* Belt */}
                         <td className="px-5 py-4">
-                          {belt ? (
-                            <BeltBadge
-                              belt={belt}
-                            />
+                          {belt !== '' ? (
+                            <span className="inline-flex rounded-full bg-[#EFF6FF] px-3 py-1 text-xs font-semibold text-[#1D4ED8]">
+                              {belt}
+                            </span>
                           ) : (
                             <span className="text-sm text-[#94A3B8]">
                               —
