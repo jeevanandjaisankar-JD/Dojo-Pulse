@@ -45,11 +45,14 @@ const slang = (student) =>
   student.primaryLanguage ??
   '';
 
-const sbelt = (student) =>
-  student.belt ??
-  student.current_belt ??
-  student.currentBelt ??
-  '';
+const sbelt = (student) => {
+  const count = student.totalUniqueBelts ??
+    student.beltHistory?.length;
+  if (Number.isFinite(Number(count))) {
+    return `${Number(count)} ${Number(count) === 1 ? 'belt' : 'belts'}`;
+  }
+  return student.belt ?? student.current_belt ?? student.currentBelt ?? '';
+};
 
 const sbatch = (student) =>
   student.batch ??
@@ -745,10 +748,10 @@ export default function Students() {
 
                         {/* Belt */}
                         <td className="px-5 py-4">
-                          {belt ? (
-                            <BeltBadge
-                              belt={belt}
-                            />
+                          {belt !== '' ? (
+                            <span className="inline-flex rounded-full bg-[#EFF6FF] px-3 py-1 text-xs font-semibold text-[#1D4ED8]">
+                              {belt}
+                            </span>
                           ) : (
                             <span className="text-sm text-[#94A3B8]">
                               —
