@@ -68,8 +68,35 @@ const slanguages = (student) => {
     : [];
 };
 
+const normalizeStudentFilter = (value) => {
+  const normalized = String(value || 'all')
+    .trim()
+    .toLowerCase()
+    .replace(/[\\s_]+/g, '-');
+
+  if ([
+    'attention',
+    'needs-attention',
+    'not-improved',
+    'no-improvement',
+  ].includes(normalized)) {
+    return 'attention';
+  }
+
+  return normalized || 'all';
+};
+
+const getImprovementStatus = (student) =>
+  String(student?.improvementStatus || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\\s-]+/g, '_');
+
 const isimproved = (student) =>
-  student.improvementStatus === 'IMPROVED';
+  getImprovementStatus(student) === 'IMPROVED';
+
+const needsAttention = (student) =>
+  !isimproved(student);
 
 export default function Students() {
   const navigate = useNavigate();
@@ -91,9 +118,9 @@ export default function Students() {
   const [query, setQuery] =
     useState('');
 
-  const initialFilter =
-    searchParams.get('filter') ||
-    'all';
+  const initialFilter = normalizeStudentFilter(
+    searchParams.get('filter')
+  );
 
   const [filter, setFilter] =
     useState(initialFilter);
@@ -102,9 +129,9 @@ export default function Students() {
    * Keep filter synchronized with URL.
    */
   useEffect(() => {
-    const urlFilter =
-      searchParams.get('filter') ||
-      'all';
+    const urlFilter = normalizeStudentFilter(
+      searchParams.get('filter')
+    );
 
     if (urlFilter !== filter) {
       setFilter(urlFilter);
@@ -213,7 +240,7 @@ export default function Students() {
             return isimproved(student);
 
           case 'attention':
-            return !isimproved(student);
+            return needsAttention(student);
 
           case 'squad138':
             return sbatch(student)
