@@ -81,10 +81,52 @@ const getStudents = async (req, res) => {
 
     const latestTestResults = buildLatestTestResults(beltTestRecords);
 
-    let students = studentDocs.map((student) => ({
-      ...student,
-      improvementStatus: getLatestTestStatus(student, latestTestResults)
-    }));
+    // Rebuild the unique belt history from canonical raw test records.
+    // The key is language + level, preventing duplicate CSV uploads or
+    // repeated test rows from counting the same earned belt twice.
+    const beltHistoryByEmail = new Map();
+    const languageFields = {
+      Python: 'python',
+      'Node.js': 'nodejs',
+      Java: 'java',
+      'C++': 'cpp'
+    };
+
+    for (const record of beltTestRecords) {
+      const email = normalizeEmail(record.email);
+      if (!email) continue;
+      if (!beltHistoryByEmail.has(email)) {
+        beltHistoryByEmail.set(email, new Map());
+      }
+      const history = beltHistoryByEmail.get(email);
+      const initial = record.initialBeltLevels || {};
+      const final = record.finalBeltLevels || {};
+
+      for (const [language, field] of Object.entries(languageFields)) {
+        const initialLevel = Number(initial[field]) || 0;
+        const finalLevel = Number(final[field]) || 0;
+        for (let level = initialLevel + 1; level <= finalLevel; level += 1) {
+          history.set(`${language}:${level}`, { language, level });
+        }
+      }
+    }
+
+    let students = studentDocs.map((student) => {
+      const beltHistory = [
+        ...(beltHistoryByEmail.get(normalizeEmail(student.email))?.values() || [])
+      ].sort((first, second) =>
+        Object.keys(languageFields).indexOf(first.language) -
+          Object.keys(languageFields).indexOf(second.language) ||
+        first.level - second.level
+      );
+
+      return {
+        ...student,
+        beltHistory,
+        totalUniqueBelts: beltHistory.length,
+        improvementStatus: getLatestTestStatus(student, latestTestResults)
+      };
+    });
 
     if (trimmedSearch) {
       const query = trimmedSearch.toLowerCase();
