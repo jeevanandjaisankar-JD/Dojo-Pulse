@@ -74,7 +74,7 @@ const getStudents = async (req, res) => {
     const trimmedSearch = String(search).trim();
 
     if (trimmedSearch) {
-      const safeSearch = trimmedSearch.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
+      const safeSearch = trimmedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\      const safeSearch = trimmedSearch.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');');
       filter.$or = [
         { name: { $regex: safeSearch, $options: 'i' } },
         { email: { $regex: safeSearch, $options: 'i' } },
