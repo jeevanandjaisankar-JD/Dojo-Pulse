@@ -92,7 +92,7 @@ export default function StudentDetail() {
   }, [id]);
 
   const beltHistory = toList(student?.beltHistory ?? student?.belt_history);
-  const totalBelts = Number(student?.totalUniqueBelts ?? beltHistory.length) || 0;
+  // Unique language + level entries are the source of truth for the totals.\n  const totalBelts = beltHistory.length;
   const languageCounts = useMemo(() => {
     const counts = Object.fromEntries(LANGUAGE_TILES.map(({ key }) => [key, 0]));
     beltHistory.forEach((entry) => {
@@ -149,8 +149,15 @@ export default function StudentDetail() {
               <div className="flex flex-col items-center justify-center text-center">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">Qualifying belts</p>
                 <h2 className="mt-1 text-lg font-bold text-[#0F172A]">Eligibility criteria</h2>
-                <div className="my-3 flex h-24 w-24 items-center justify-center rounded-full border-[7px] border-[#E6EBF2] border-t-[#2563EB] border-r-[#2563EB]">
-                  <div><p className="text-3xl font-extrabold text-[#0F172A]">{Math.min(totalBelts, ELIGIBILITY_BELTS)}</p><p className="text-[10px] text-[#64748B]">of 10</p></div>
+                <div className="relative my-3 flex h-24 w-24 items-center justify-center">
+                  <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full -rotate-90" role="img" aria-label={percentage + '% of eligibility belts earned'}>
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="#E6EBF2" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="#2563EB" strokeWidth="8" strokeLinecap="round" strokeDasharray={2 * Math.PI * 42} strokeDashoffset={(2 * Math.PI * 42) * (1 - percentage / 100)} />
+                  </svg>
+                  <div className="relative">
+                    <p className="text-3xl font-extrabold text-[#0F172A]">{Math.min(totalBelts, ELIGIBILITY_BELTS)}</p>
+                    <p className="text-[10px] text-[#64748B]">of 10</p>
+                  </div>
                 </div>
                 <div className={'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ' + (isEligible ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700')}><CheckCircle2 size={14} /> {isEligible ? 'Criteria met' : 'In progress'}</div>
                 <p className="mt-2 text-xs text-[#64748B]">{isEligible ? '100% of requirement met' : percentage + '% of requirement met'}</p>
