@@ -112,9 +112,30 @@ const getStudents = async (req, res) => {
     }
 
     let students = studentDocs.map((student) => {
-      const beltHistory = [
-        ...(beltHistoryByEmail.get(normalizeEmail(student.email))?.values() || [])
-      ].sort((first, second) =>
+      const canonicalHistory = beltHistoryByEmail.get(normalizeEmail(student.email));
+      const historySource = canonicalHistory
+        ? [...canonicalHistory.values()]
+        : (student.sameDayProgress || []).flatMap((day) =>
+          (day.attempts || []).flatMap((attempt) => {
+            const initialLevel = Number(attempt.verifiedBelts) || 0;
+            const finalLevel = Number(attempt.beltLevel) || 0;
+            return Array.from(
+              { length: Math.max(0, finalLevel - initialLevel) },
+              (_, index) => ({
+                language: attempt.language || 'Other',
+                level: initialLevel + index + 1
+              })
+            );
+          })
+        );
+
+      const uniqueHistory = new Map(
+        historySource.map((entry) => [
+          `${entry.language}:${entry.level}`,
+          entry
+        ])
+      );
+      const beltHistory = [...uniqueHistory.values()].sort((first, second) =>
         Object.keys(languageFields).indexOf(first.language) -
           Object.keys(languageFields).indexOf(second.language) ||
         first.level - second.level
