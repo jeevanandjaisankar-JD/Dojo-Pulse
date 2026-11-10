@@ -37,13 +37,6 @@ const semail = (student) =>
   student.mail ??
   '';
 
-const slang = (student) =>
-  student.language ??
-  student.lang ??
-  student.primary_language ??
-  student.primaryLanguage ??
-  '';
-
 const sbelt = (student) => {
   const count = student.totalUniqueBelts ??
     student.beltHistory?.length;
@@ -87,18 +80,6 @@ export const createSquadFilters = (squads = []) =>
         ? `Squad ${squad}`
         : squad,
   }));
-
-const slanguages = (student) => {
-  if (Array.isArray(student.languagesAttempted)) {
-    return student.languagesAttempted.filter(Boolean);
-  }
-
-  const language = slang(student);
-
-  return language
-    ? [language]
-    : [];
-};
 
 const normalizeStudentFilter = (value) => {
   const normalized = String(value || 'all')
@@ -229,24 +210,6 @@ export default function Students() {
   );
 
   /*
-   * Collect all available languages.
-   */
-  const languages = useMemo(() => {
-    const values =
-      students.flatMap((student) =>
-        slanguages(student)
-      );
-
-    return [
-      ...new Set(values),
-    ]
-      .filter(Boolean)
-      .sort((a, b) =>
-        a.localeCompare(b)
-      );
-  }, [students]);
-
-  /*
    * Apply search + filter.
    */
   const filtered = useMemo(() => {
@@ -287,59 +250,7 @@ export default function Students() {
           case 'attention':
             return needsAttention(student);
 
-          case 'python':
-            return slanguages(
-              student
-            ).some(
-              (language) =>
-                language
-                  .toLowerCase() ===
-                'python'
-            );
-
-          case 'nodejs':
-            return slanguages(
-              student
-            ).some((language) =>
-              [
-                'node.js',
-                'nodejs',
-                'node',
-              ].includes(
-                language.toLowerCase()
-              )
-            );
-
-          case 'java':
-            return slanguages(
-              student
-            ).some(
-              (language) =>
-                language
-                  .toLowerCase() ===
-                'java'
-            );
-
-          case 'cpp':
-            return slanguages(
-              student
-            ).some((language) =>
-              [
-                'c++',
-                'cpp',
-                'c plus plus',
-              ].includes(
-                language.toLowerCase()
-              )
-            );
-
           default:
-            /*
-             * Dynamic language filters.
-             *
-             * Example:
-             * filter=language:JavaScript
-             */
             if (filter.startsWith('squad:')) {
               const selectedSquad = filter
                 .slice('squad:'.length)
@@ -349,28 +260,6 @@ export default function Students() {
               return String(sbatch(student) ?? '')
                 .trim()
                 .toLowerCase() === selectedSquad;
-            }
-
-            if (
-              filter.startsWith(
-                'language:'
-              )
-            ) {
-              const selectedLanguage =
-                filter
-                  .slice(
-                    'language:'.length
-                  )
-                  .toLowerCase();
-
-              return slanguages(
-                student
-              ).some(
-                (language) =>
-                  language
-                    .toLowerCase() ===
-                  selectedLanguage
-              );
             }
 
             return true;
@@ -518,48 +407,6 @@ export default function Students() {
                 </option>
               ))}
 
-              <option value="python">
-                Python
-              </option>
-
-              <option value="nodejs">
-                Node.js
-              </option>
-
-              <option value="java">
-                Java
-              </option>
-
-              <option value="cpp">
-                C++
-              </option>
-
-              {languages
-                .filter((language) => {
-                  const normalized =
-                    language.toLowerCase();
-
-                  return ![
-                    'python',
-                    'node',
-                    'nodejs',
-                    'node.js',
-                    'java',
-                    'c++',
-                    'cpp',
-                    'c plus plus',
-                  ].includes(
-                    normalized
-                  );
-                })
-                .map((language) => (
-                  <option
-                    key={language}
-                    value={`language:${language}`}
-                  >
-                    {language}
-                  </option>
-                ))}
             </select>
 
             {(query ||
@@ -667,9 +514,6 @@ export default function Students() {
                     Email
                   </th>
 
-                  <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-[#64748B]">
-                    Language
-                  </th>
 
                   <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-[#64748B]">
                     Batch
@@ -707,11 +551,6 @@ export default function Students() {
 
                     const batch =
                       sbatch(student);
-
-                    const studentLanguages =
-                      slanguages(
-                        student
-                      );
 
                     const improved =
                       isimproved(
@@ -756,31 +595,6 @@ export default function Students() {
                           <span className="text-sm font-medium text-[#475569]">
                             {email || '—'}
                           </span>
-                        </td>
-
-                        {/* Language */}
-                        <td className="px-5 py-4">
-                          {studentLanguages.length >
-                          0 ? (
-                            <div className="flex flex-wrap gap-1.5">
-                              {studentLanguages.map(
-                                (language) => (
-                                  <span
-                                    key={
-                                      language
-                                    }
-                                    className="rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-semibold text-[#475569]"
-                                  >
-                                    {language}
-                                  </span>
-                                )
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-sm text-[#94A3B8]">
-                              —
-                            </span>
-                          )}
                         </td>
 
                         {/* Batch */}

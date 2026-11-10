@@ -1,77 +1,58 @@
+import React from "react";
 import {
   LayoutDashboard,
   Users,
   TrendingUp,
   Upload,
   User,
-  ArrowLeft,
-  Menu,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const menu = [
-  {
-    name: "Dashboard",
-    icon: LayoutDashboard,
-    path: "/"
-  },
-  {
-    name: "Students",
-    icon: Users,
-    path: "/students"
-  },
-  {
-    name: "Improvements",
-    icon: TrendingUp,
-    path: "/improvements"
-  },
-  {
-    name: "Upload",
-    icon: Upload,
-    path: "/upload"
-  },
-  {
-    name: "Profile",
-    icon: User,
-    path: "/profile"
-  }
+  { name: "Dashboard", icon: LayoutDashboard, path: "/" },
+  { name: "Students", icon: Users, path: "/students" },
+  { name: "Improvements", icon: TrendingUp, path: "/improvements" },
+  { name: "Upload", icon: Upload, path: "/upload" },
+  { name: "Profile", icon: User, path: "/profile" },
 ];
 
-export default function Sidebar({ collapsed, setCollapsed }) {
+export default function Sidebar({ expanded, setExpanded, width, setWidth }) {
+  const [isResizing, setIsResizing] = React.useState(false);
+
+  const handleResizeStart = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsResizing(true);
+    setExpanded(true);
+  };
+
+  const handleResize = (event) => {
+    if (!isResizing) return;
+    setWidth(Math.min(320, Math.max(76, event.clientX)));
+  };
+
+  const handleResizeEnd = () => setIsResizing(false);
+
   return (
     <>
-      {/* Desktop Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-40 hidden h-screen border-r border-[#D5D9E0] bg-[#e4e6eb] px-4 pb-4 pt-20 transition-all duration-300 lg:block ${
-          collapsed ? "w-20" : "w-64"
-        }`}
+        onMouseEnter={(event) => {
+          const currentWidth = expanded ? width : 76;
+          // Keep the resize edge reachable while collapsed; hovering the
+          // interior expands the menu, while hovering the edge shows resize.
+          if (Math.abs(event.clientX - currentWidth) > 8) setExpanded(true);
+        }}
+        onMouseLeave={() => {
+          if (!isResizing) setExpanded(false);
+        }}
+        style={{ width: expanded ? width : 76 }}
+        className="fixed left-0 top-0 z-40 hidden h-screen border-r border-[#D5D9E0] bg-[#e4e6eb] px-3 pb-4 pt-20 transition-[width] duration-200 lg:block"
       >
-        {/* Collapse Button */}
-        <button
-          type="button"
-          onClick={() => setCollapsed((value) => !value)}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={`mb-6 flex h-10 items-center rounded-xl border border-[#CDD1D8] bg-[#F1F2F5] text-[#334155] transition-all duration-200 hover:bg-[#D8DBE1] hover:text-[#0F172A] ${
-            collapsed
-              ? "w-full justify-center"
-              : "w-full justify-start px-3"
-          }`}
-        >
-          {collapsed ? (
-            <Menu size={22} />
-          ) : (
-            <ArrowLeft size={22} />
-          )}
-        </button>
+        <p className={`mb-4 px-2 text-xs font-semibold uppercase tracking-wider text-[#64748B] transition-opacity ${expanded ? "opacity-100" : "pointer-events-none opacity-0"}`}>
+          Menu
+        </p>
 
-        {/* Menu Label */}
-        {!collapsed && (
-          <p className="mb-4 px-1 text-xs font-semibold uppercase tracking-wider text-[#64748B]">
-            Menu
-          </p>
-        )}
-
-        {/* Navigation */}
         <nav className="space-y-2">
           {menu.map((item) => {
             const Icon = item.icon;
@@ -81,11 +62,11 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 key={item.name}
                 to={item.path}
                 end={item.path === "/"}
+                onClick={() => setExpanded(false)}
+                title={!expanded ? item.name : undefined}
                 className={({ isActive }) =>
                   `flex items-center rounded-xl py-3 transition-all duration-200 ${
-                    collapsed
-                      ? "justify-center px-0"
-                      : "gap-3 px-4"
+                    expanded ? "gap-3 px-4" : "justify-center px-0"
                   } ${
                     isActive
                       ? "bg-[#E63946] text-white shadow-sm"
@@ -94,19 +75,25 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 }
               >
                 <Icon size={20} />
-
-                {!collapsed && (
-                  <span className="font-medium">
-                    {item.name}
-                  </span>
-                )}
+                {expanded && <span className="font-medium">{item.name}</span>}
               </NavLink>
             );
           })}
         </nav>
+
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+          title="Drag to resize sidebar"
+          onPointerDown={handleResizeStart}
+          onPointerMove={handleResize}
+          onPointerUp={handleResizeEnd}
+          onPointerCancel={handleResizeEnd}
+          className="absolute -right-1 top-0 z-50 h-full w-2 touch-none cursor-ew-resize bg-transparent transition-colors hover:bg-[#2563EB]/30"
+        />
       </aside>
 
-      {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#D5D9E0] bg-white lg:hidden">
         <div className="grid grid-cols-5">
           {menu.map((item) => {
