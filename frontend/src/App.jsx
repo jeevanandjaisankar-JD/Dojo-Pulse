@@ -14,6 +14,8 @@ import StudentDetail from './pages/StudentDetail';
 import Improvements from './pages/Improvements';
 import DataUpload from './pages/DataUpload';
 import Profile from './pages/Profile';
+import Notifications from './pages/Notifications';
+import Goals from './pages/Goals';
 
 function App() {
   return (
@@ -36,6 +38,8 @@ function App() {
               <Route path="/students/:id" element={<StudentDetail />} />
               <Route path="/improvements" element={<Improvements />} />
               <Route path="/upload" element={<DataUpload />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/goals" element={<Goals />} />
               <Route path="/profile" element={<Profile />} />
             </Route>
           </Route>
