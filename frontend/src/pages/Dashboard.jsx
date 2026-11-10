@@ -152,7 +152,7 @@ export default function Dashboard() {
       tone: 'green',
     },
     {
-      label: 'Not Improved',
+      label: 'Needs Attention',
       value: stats?.notImprovedStudents ?? 0,
       tone: 'red',
     },
@@ -203,7 +203,7 @@ export default function Dashboard() {
       to: '/students?filter=improved',
     },
     {
-      label: 'Not Improved',
+      label: 'Needs Attention',
       value: improvements?.notImprovedCount ?? 0,
       to: '/students?filter=attention',
     },
