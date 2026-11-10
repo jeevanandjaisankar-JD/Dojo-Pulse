@@ -5,6 +5,7 @@ import {
   TrendingUp,
   Upload,
   User,
+  Target,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -13,6 +14,7 @@ const menu = [
   { name: "Students", icon: Users, path: "/students" },
   { name: "Improvements", icon: TrendingUp, path: "/improvements" },
   { name: "Upload", icon: Upload, path: "/upload" },
+  { name: "Goals", icon: Target, path: "/goals" },
   { name: "Profile", icon: User, path: "/profile" },
 ];
 
@@ -95,7 +97,7 @@ export default function Sidebar({ expanded, setExpanded, width, setWidth }) {
       </aside>
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#D5D9E0] bg-white lg:hidden">
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-6">
           {menu.map((item) => {
             const Icon = item.icon;
 
