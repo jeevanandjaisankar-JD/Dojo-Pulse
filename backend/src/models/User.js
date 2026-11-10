@@ -23,10 +23,58 @@ const userSchema = new mongoose.Schema({
     unique: true,
     sparse: true
   },
-  
   squad: {
     type: String,
     default: null
+  },
+  dateOfBirth: {
+    type: Date,
+    default: null
+  },
+  contactNumber: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  qualification: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  degree: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  institution: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  completionYear: {
+    type: Number,
+    default: null
+  },
+  designation: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  expertise: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  technicalSkills: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  yearsOfExperience: {
+    type: Number,
+    default: null,
+    min: 0,
+    max: 60
   },
   isActive: {
     type: Boolean,
