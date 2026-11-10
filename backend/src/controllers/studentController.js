@@ -199,7 +199,7 @@ const getStudentById = async (req, res) => {
       ...student,
       name: student.name || latestRecord?.studentName || '',
       squadNumber,
-      batch: student.batch || (squadNumber ? 'Squad ' + squadNumber : ''),
+      batch: squadNumber ? 'Squad ' + squadNumber : (student.batch || ''),
       beltHistory,
       totalUniqueBelts: beltHistory.length
     };
