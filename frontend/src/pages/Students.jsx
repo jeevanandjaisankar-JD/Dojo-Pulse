@@ -32,10 +32,27 @@ const normalizeLanguage = (value = '') => {
 };
 
 const getImprovedLanguages = (student) => {
-  if (Array.isArray(student.improvedLanguages)) {
-    return student.improvedLanguages.map(normalizeLanguage).filter(Boolean);
+  // sameDayProgress is the persisted, date-grouped source used by the
+  // dashboard. Derive the language set from its latest test day so language
+  // filters match the overall recent-improvement calculation.
+  const latestDay = [...(student.sameDayProgress || [])]
+    .filter((day) => day.date)
+    .sort((first, second) => String(second.date).localeCompare(String(first.date)))[0];
+
+  if (latestDay) {
+    return [...new Set((latestDay.attempts || [])
+      .filter((attempt) =>
+        attempt.isImproved === true ||
+        String(attempt.status || '').trim().toUpperCase().replace(/[ -]+/g, '_') === 'IMPROVED'
+      )
+      .map((attempt) => normalizeLanguage(attempt.language))
+      .filter(Boolean))];
   }
-  return [];
+
+  // Compatibility with API responses that only include the computed field.
+  return Array.isArray(student.improvedLanguages)
+    ? student.improvedLanguages.map(normalizeLanguage).filter(Boolean)
+    : [];
 };
 
 const isImproved = (student) =>
