@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Users, Eye, Trophy, X } from 'lucide-react';
+import { Search, Users, Eye, X } from 'lucide-react';
 import { getStudents } from '../services/api';
 import { toList } from '../components/StatCard';
 
@@ -43,15 +43,6 @@ const isImproved = (student) =>
 
 const isImprovedInLanguage = (student, language) =>
   getImprovedLanguages(student).includes(language);
-
-const normalizeFilter = (value) => {
-  const normalized = String(value || 'all').trim().toLowerCase()
-    .replace(/[\s_]+/g, '-');
-  if (['attention', 'needs-attention', 'not-improved', 'no-improvement'].includes(normalized)) {
-    return 'attention';
-  }
-  return normalized || 'all';
-};
 
 export const SquadsAvailable = (data = []) => [
   ...new Set(data.map((student) => String(sbatch(student) ?? '').trim()).filter(Boolean))
