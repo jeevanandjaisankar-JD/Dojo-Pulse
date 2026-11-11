@@ -1,10 +1,15 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import { ShieldCheck, Sparkles } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import kalviumLogo from '../assets/kalvium-logo.svg';
+
+const destinationFor = (account) => {
+  if (account?.role === 'mentor') return '/dashboard';
+  if (account?.role === 'student') return '/studentHome';
+  return '/login';
+};
 
 const Login = () => {
   const { loginGoogle, user, isAuthenticated, loading: authLoading } = useAuth();
@@ -13,9 +18,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const destinationFor = (account) =>
-    account?.role === 'mentor' ? '/' : '/student';
-
+  // Returning users are routed as soon as their saved session is available.
   useEffect(() => {
     if (!authLoading && isAuthenticated && user) {
       navigate(destinationFor(user), { replace: true });
@@ -57,9 +60,7 @@ const Login = () => {
 
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
-           
-          </div>
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600" />
 
           <h1 className="text-3xl font-extrabold tracking-tight text-[#0F172A]">
             <img

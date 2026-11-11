@@ -22,6 +22,41 @@ const normalizeStatus = (value) =>
     .replaceAll(' ', '_')
     .replaceAll('-', '_');
 
+const normalizeLanguage = (value) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'python') return 'Python';
+  if (normalized === 'java') return 'Java';
+  if (['node', 'nodejs', 'node.js'].includes(normalized)) return 'Node.js';
+  if (['cpp', 'c++', 'c plus plus'].includes(normalized)) return 'C++';
+  return '';
+};
+
+const getLatestImprovedLanguages = (student, latestTestResults) => {
+  // The aggregated student record already groups attempts by test date.
+  // Use its latest day so all language attempts from that day are considered,
+  // even when their individual timestamps differ.
+  const latestDay = [...(student.sameDayProgress || [])]
+    .filter((day) => day.date)
+    .sort((first, second) => String(second.date).localeCompare(String(first.date)))[0];
+
+  if (latestDay) {
+    return [...new Set((latestDay.attempts || [])
+      .filter((attempt) =>
+        attempt.isImproved === true ||
+        normalizeStatus(attempt.status) === 'IMPROVED'
+      )
+      .map((attempt) => normalizeLanguage(attempt.language))
+      .filter(Boolean))];
+  }
+
+  // Older student records may not contain sameDayProgress. In that case,
+  // use the canonical belt-test collection as the fallback.
+  const canonicalResult = latestTestResults.get(normalizeEmail(student.email));
+  return canonicalResult
+    ? [...canonicalResult.improvedLanguages]
+    : [];
+};
+
 const getLatestTestStatus = (student, latestTestResults) => {
   const email = normalizeEmail(student.email);
   const latestTest = latestTestResults.get(email);
@@ -127,7 +162,13 @@ const getStudents = async (req, res) => {
 
     let students = studentDocs.map((student) => {
       const beltHistory = buildUniqueBeltHistory(student, beltTestRecords);
-      return { ...student, beltHistory, totalUniqueBelts: beltHistory.length, improvementStatus: getLatestTestStatus(student, latestTestResults) };
+      return {
+        ...student,
+        beltHistory,
+        totalUniqueBelts: beltHistory.length,
+        improvementStatus: getLatestTestStatus(student, latestTestResults),
+        improvedLanguages: getLatestImprovedLanguages(student, latestTestResults)
+      };
     });
 
     if (trimmedSearch) {

@@ -10,7 +10,7 @@ import {
 import { NavLink } from "react-router-dom";
 
 const menu = [
-  { name: "Dashboard", icon: LayoutDashboard, path: "/" },
+  { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { name: "Students", icon: Users, path: "/students" },
   { name: "Improvements", icon: TrendingUp, path: "/improvements" },
   { name: "Upload", icon: Upload, path: "/upload" },
@@ -63,7 +63,7 @@ export default function Sidebar({ expanded, setExpanded, width, setWidth }) {
               <NavLink
                 key={item.name}
                 to={item.path}
-                end={item.path === "/"}
+                end={item.path === "/dashboard"}
                 onClick={() => setExpanded(false)}
                 title={!expanded ? item.name : undefined}
                 className={({ isActive }) =>
@@ -105,7 +105,7 @@ export default function Sidebar({ expanded, setExpanded, width, setWidth }) {
               <NavLink
                 key={item.name}
                 to={item.path}
-                end={item.path === "/"}
+                end={item.path === "/dashboard"}
                 className={({ isActive }) =>
                   `flex flex-col items-center justify-center gap-1 py-3 text-[11px] transition-colors ${
                     isActive

@@ -121,7 +121,10 @@ const googleLogin = async (req, res) => {
         user.name = payload.name;
       }
 
-      await user.save();
+      // Avoid an unnecessary database write on every returning login.
+      if (user.isModified()) {
+        await user.save();
+      }
     } else {
       user = await User.create({
         email: identity.email,
