@@ -2,6 +2,44 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 
+// Small per-instance cache avoids repeating the same MongoDB lookup for every
+// API request. A short TTL bounds how long account/role changes can be stale.
+const USER_CACHE_TTL_MS = 20 * 1000;
+const USER_CACHE_MAX_ENTRIES = 1000;
+const userCache = new Map();
+
+const getCachedUser = async (userId) => {
+  const now = Date.now();
+  const cached = userCache.get(userId);
+
+  if (cached && cached.expiresAt > now) {
+    return cached.user;
+  }
+
+  if (cached) userCache.delete(userId);
+
+  const user = await User.findById(userId)
+    .select('_id email name role squad isActive')
+    .lean();
+
+  if (!user || !user.isActive) {
+    userCache.delete(userId);
+    return null;
+  }
+
+  if (userCache.size >= USER_CACHE_MAX_ENTRIES) {
+    const oldestKey = userCache.keys().next().value;
+    if (oldestKey) userCache.delete(oldestKey);
+  }
+
+  userCache.set(userId, {
+    user,
+    expiresAt: now + USER_CACHE_TTL_MS
+  });
+
+  return user;
+};
+
 const authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -13,7 +51,7 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.slice(7).trim();
     const secret = process.env.JWT_SECRET;
 
     if (!secret || secret.length < 32) {
@@ -46,9 +84,9 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    const user = await User.findById(decoded.sub);
+    const user = await getCachedUser(decoded.sub);
 
-    if (!user || !user.isActive) {
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: 'Account not found or inactive.'
@@ -56,7 +94,7 @@ const authMiddleware = async (req, res, next) => {
     }
 
     req.user = {
-      id: user.id,
+      id: user._id.toString(),
       email: user.email,
       name: user.name,
       role: user.role,
@@ -65,9 +103,11 @@ const authMiddleware = async (req, res, next) => {
 
     return next();
   } catch (error) {
-    if (error.name === 'JsonWebTokenError' ||
-        error.name === 'TokenExpiredError' ||
-        error.name === 'CastError') {
+    if (
+      error.name === 'JsonWebTokenError' ||
+      error.name === 'TokenExpiredError' ||
+      error.name === 'CastError'
+    ) {
       return res.status(401).json({
         success: false,
         message: 'Invalid or expired authentication token.'
