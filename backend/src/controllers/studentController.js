@@ -22,6 +22,40 @@ const normalizeStatus = (value) =>
     .replaceAll(' ', '_')
     .replaceAll('-', '_');
 
+const normalizeLanguage = (value) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'python') return 'Python';
+  if (normalized === 'java') return 'Java';
+  if (['node', 'nodejs', 'node.js'].includes(normalized)) return 'Node.js';
+  if (['cpp', 'c++', 'c plus plus'].includes(normalized)) return 'C++';
+  return '';
+};
+
+const getLatestImprovedLanguages = (student, latestTestResults) => {
+  const canonicalResult = latestTestResults.get(normalizeEmail(student.email));
+  if (canonicalResult) {
+    return [...canonicalResult.improvedLanguages];
+  }
+
+  // Legacy fallback: derive language status from the most recent recorded
+  // test day rather than mixing attempts from older tests.
+  const latestDay = [...(student.sameDayProgress || [])]
+    .filter((day) => day.date)
+    .sort((first, second) => String(second.date).localeCompare(String(first.date)))[0];
+
+  if (latestDay) {
+    return [...new Set((latestDay.attempts || [])
+      .filter((attempt) =>
+        attempt.isImproved === true ||
+        normalizeStatus(attempt.status) === 'IMPROVED'
+      )
+      .map((attempt) => normalizeLanguage(attempt.language))
+      .filter(Boolean))];
+  }
+
+  return [];
+};
+
 const getLatestTestStatus = (student, latestTestResults) => {
   const email = normalizeEmail(student.email);
   const latestTest = latestTestResults.get(email);
@@ -127,7 +161,13 @@ const getStudents = async (req, res) => {
 
     let students = studentDocs.map((student) => {
       const beltHistory = buildUniqueBeltHistory(student, beltTestRecords);
-      return { ...student, beltHistory, totalUniqueBelts: beltHistory.length, improvementStatus: getLatestTestStatus(student, latestTestResults) };
+      return {
+        ...student,
+        beltHistory,
+        totalUniqueBelts: beltHistory.length,
+        improvementStatus: getLatestTestStatus(student, latestTestResults),
+        improvedLanguages: getLatestImprovedLanguages(student, latestTestResults)
+      };
     });
 
     if (trimmedSearch) {
