@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import {
   BarChart3,
@@ -13,7 +14,6 @@ import {
 import {
   getDashboardStats,
   getImprovementsAnalytics,
-  getMentorProfile,
   getUploadHistory,
 } from '../services/api';
 
@@ -74,10 +74,10 @@ const greetingWord = () => {
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [improvements, setImprovements] = useState(null);
-  const [mentor, setMentor] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { user: mentor } = useAuth();
 
   useEffect(() => {
     let alive = true;
@@ -86,9 +86,8 @@ export default function Dashboard() {
       getDashboardStats(),
       getImprovementsAnalytics(),
       getUploadHistory(),
-      getMentorProfile(),
     ]).then(
-      ([statsResult, improvementsResult, historyResult, mentorResult]) => {
+      ([statsResult, improvementsResult, historyResult]) => {
         if (!alive) return;
 
         if (statsResult.status === 'fulfilled') {
@@ -115,12 +114,6 @@ export default function Dashboard() {
           setError('Could not load upload history.');
         }
 
-        if (mentorResult.status === 'fulfilled') {
-          setMentor(unwrap(mentorResult.value));
-        } else {
-          setError('Could not load mentor profile.');
-        }
-
         setLoading(false);
       }
     );
@@ -130,12 +123,8 @@ export default function Dashboard() {
     };
   }, []);
 
-  // Logged-in mentor name
-  const fullName =
-    mentor?.name ??
-    mentor?.full_name ??
-    mentor?.fullName ??
-    '';
+  // Reuse the authenticated user already held by AuthContext.
+  const fullName = mentor?.name ?? mentor?.full_name ?? mentor?.fullName ?? '';
 
   const firstName = fullName.trim().split(' ')[0];
 
