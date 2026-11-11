@@ -105,7 +105,7 @@ export default function Sidebar({ expanded, setExpanded, width, setWidth }) {
               <NavLink
                 key={item.name}
                 to={item.path}
-                end={item.path === "/"}
+                end={item.path === "/dashboard"}
                 className={({ isActive }) =>
                   `flex flex-col items-center justify-center gap-1 py-3 text-[11px] transition-colors ${
                     isActive
