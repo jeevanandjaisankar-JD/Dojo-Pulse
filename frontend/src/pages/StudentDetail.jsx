@@ -21,19 +21,38 @@ const normalizeLanguage = (value = '') => {
   return value;
 };
 
-function ProgressRing({ value, total }) {
-  const radius = 62;
+function ProgressRing({ value, total, photo, name }) {
+  const radius = 78;
   const circumference = 2 * Math.PI * radius;
-  const progress = Math.min(value / total, 1);
+  const gap = circumference * 0.12;
+  const arcLength = circumference - gap;
+  const progress = Math.min(Math.max(value / total, 0), 1);
+  const initials = String(name || '?').trim().charAt(0).toUpperCase();
+
   return (
-    <div className="relative flex h-36 w-36 items-center justify-center">
-      <svg viewBox="0 0 160 160" className="absolute inset-0 h-full w-full -rotate-90">
-        <circle cx="80" cy="80" r={radius} fill="none" stroke="#E6EBF2" strokeWidth="8" />
-        <circle cx="80" cy="80" r={radius} fill="none" stroke="#2563EB" strokeWidth="8" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - progress)} />
+    <div className="relative flex h-64 w-64 max-w-full items-center justify-center">
+      <svg viewBox="0 0 200 200" className="absolute inset-0 h-full w-full" role="img" aria-label={value + ' of ' + total + ' total belts earned'}>
+        <path d="M 64 165 A 78 78 0 1 1 136 165" fill="none" stroke="#ECEEEA" strokeWidth="9" strokeLinecap="round" />
+        <path
+          d="M 64 165 A 78 78 0 1 1 136 165"
+          fill="none"
+          stroke="#788273"
+          strokeWidth="9"
+          strokeLinecap="round"
+          strokeDasharray={arcLength}
+          strokeDashoffset={arcLength * (1 - progress)}
+        />
       </svg>
-      <div className="flex h-20 w-20 flex-col items-center justify-center rounded-full bg-[#EFF6FF]">
-        <span className="text-2xl font-extrabold text-[#0F172A]">{value}</span>
-        <span className="text-[10px] font-semibold text-[#64748B]">of {total} belts</span>
+      <div className="relative z-10 flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border-[5px] border-[#F1F0EB] bg-[#F4F2EC] shadow-sm">
+        {photo ? (
+          <img src={photo} alt={name + ' profile'} className="h-full w-full object-cover" />
+        ) : (
+          <span className="text-4xl font-bold text-[#788273]">{initials}</span>
+        )}
+      </div>
+      <div className="absolute bottom-0 left-1/2 z-20 min-w-36 -translate-x-1/2 rounded-2xl border border-[#E9E7E0] bg-[#F5F4F0] px-5 py-2 text-center shadow-sm">
+        <p className="text-xl font-extrabold leading-tight text-[#343A34]">{value} / {total}</p>
+        <p className="mt-0.5 text-[10px] font-medium text-[#85877F]">earned belts</p>
       </div>
     </div>
   );
@@ -115,25 +134,30 @@ export default function StudentDetail() {
   };
 
   const beltHistory = toList(student?.beltHistory ?? student?.belt_history);
-  const totalBelts = beltHistory.length;
   const languageCounts = useMemo(() => {
     const counts = Object.fromEntries(LANGUAGE_TILES.map(({ key }) => [key, 0]));
     beltHistory.forEach((entry) => {
       const language = normalizeLanguage(entry?.language);
-      if (Object.prototype.hasOwnProperty.call(counts, language)) counts[language] += 1;
+      if (Object.prototype.hasOwnProperty.call(counts, language)) {
+        counts[language] = Math.min(7, counts[language] + 1);
+      }
     });
     return counts;
   }, [beltHistory]);
+  // Four languages, capped at seven belts each, gives a maximum of 28.
+  const totalBelts = Object.values(languageCounts).reduce((sum, count) => sum + count, 0);
 
   const squad = student?.batch || (student?.squadNumber ? 'Squad ' + student.squadNumber : '');
   const name = student?.name ?? student?.full_name ?? student?.fullName ?? 'Unnamed student';
   const timeline = toList(student?.sameDayProgress ?? student?.weekly_progress ?? student?.weeklyProgress ?? student?.weekly);
   const weekly = toPairs(student?.weekly_progress ?? student?.weeklyProgress ?? student?.weekly);
   const isEligible = totalBelts >= ELIGIBILITY_BELTS;
-  const percentage = Math.min(100, Math.round((totalBelts / ELIGIBILITY_BELTS) * 100));
+  const percentage = Math.min(100, Math.round((totalBelts / 28) * 100));
+  const eligibilityPercentage = Math.min(100, Math.round((totalBelts / ELIGIBILITY_BELTS) * 100));
+  const profilePhoto = student?.picture || student?.photoURL || student?.profilePicture || student?.avatar || student?.googlePicture || student?.imageUrl || '';
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-8rem)] min-h-0 max-w-[1600px] flex-col gap-2 overflow-hidden">
+    <div className="mx-auto flex min-h-[calc(100dvh-8rem)] max-w-[1600px] flex-col gap-4 pb-6">
       <div className="flex shrink-0 items-center justify-between">
         <Link to="/students" className="inline-flex items-center gap-2 text-sm font-semibold text-[#64748B] hover:text-[#2563EB]"><ArrowLeft size={16} /> Back to students</Link>
         <div className="flex items-center gap-2">
@@ -143,51 +167,90 @@ export default function StudentDetail() {
       </div>
       {error && <div className="shrink-0 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
       {loading ? (
-        <div className="grid min-h-0 flex-1 grid-cols-2 gap-3"><div className="skeleton rounded-[22px]" /><div className="skeleton rounded-[22px]" /></div>
+        <div className="grid min-h-[620px] grid-cols-1 gap-4 xl:grid-cols-2"><div className="skeleton rounded-[22px]" /><div className="skeleton rounded-[22px]" /></div>
       ) : student ? (
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden xl:grid-cols-[minmax(360px,0.95fr)_minmax(0,1.05fr)]">
-          <div className="grid min-h-0 grid-rows-[1fr_1fr] gap-3">
-            <section className="card flex min-h-0 flex-col items-center justify-between overflow-hidden !p-4">
+        <div className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-[minmax(390px,0.92fr)_minmax(0,1.08fr)]">
+          <div className="flex flex-col gap-5">
+            <section className="card flex min-h-[570px] flex-col items-center !p-7 sm:!p-8">
               <div className="flex w-full items-start justify-between">
-                <div className="min-w-0"><p className="text-xs font-medium text-[#64748B]">Dojo overview</p><h1 className="mt-1 truncate text-xl font-extrabold tracking-tight text-[#0F172A]">{name}</h1><p className="mt-1 text-sm text-[#64748B]">{squad ? 'Kalvian from squad ' + String(squad).replace(/^squad\s*/i, '') : 'Squad not available'}</p></div>
-                <span className="ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EFF6FF] text-[#2563EB]"><Award size={18} /></span>
-              </div>
-              <div className="flex min-h-0 flex-col items-center justify-center">
-                <ProgressRing value={totalBelts} total={ELIGIBILITY_BELTS} />
-                <p className="mt-1 text-center text-sm font-semibold text-[#0F172A]">{isEligible ? 'Eligibility criteria achieved' : 'Every belt brings you closer.'}</p>
-                <p className="mt-1 text-center text-xs text-[#64748B]">{isEligible ? 'All qualifying belts earned' : (ELIGIBILITY_BELTS - totalBelts) + ' belts remaining to meet eligibility'}</p>
-              </div>
-              <div className="flex w-full shrink-0 items-center justify-between border-t border-[#E6EBF2] pt-2 text-[10px] text-[#94A3B8]"><span>Cumulative progress · {percentage}%</span><span>Updated after final results</span></div>
-            </section>
-            <section className="card grid min-h-0 grid-cols-2 gap-3 overflow-hidden !p-3">
-              <div className="flex min-h-0 flex-col rounded-2xl bg-[#F4F7FB] p-3">
-                <div className="flex items-center gap-2"><Target size={15} className="shrink-0 text-[#2563EB]" /><h2 className="text-sm font-bold text-[#0F172A]">Belt progress</h2></div>
-                <p className="mt-2 text-2xl font-extrabold text-[#0F172A]">{totalBelts}<span className="ml-1 text-[10px] font-medium text-[#64748B]">total belts</span></p>
-                <ProgressTimeline entries={timeline.length ? timeline : weekly} />
-                <p className="mt-auto pt-1 text-[9px] text-[#94A3B8]">Based on recorded test history</p>
-              </div>
-              <div className="flex min-h-0 flex-col items-center justify-center text-center">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-[#64748B]">Qualifying belts</p><h2 className="mt-1 text-base font-bold text-[#0F172A]">Eligibility criteria</h2>
-                <div className="relative my-2 flex h-20 w-20 shrink-0 items-center justify-center">
-                  <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full -rotate-90" role="img" aria-label={percentage + '% of eligibility belts earned'}>
-                    <circle cx="50" cy="50" r="42" fill="none" stroke="#E6EBF2" strokeWidth="8" /><circle cx="50" cy="50" r="42" fill="none" stroke="#2563EB" strokeWidth="8" strokeLinecap="round" strokeDasharray={2 * Math.PI * 42} strokeDashoffset={(2 * Math.PI * 42) * (1 - percentage / 100)} />
-                  </svg>
-                  <div className="relative"><p className="text-2xl font-extrabold text-[#0F172A]">{Math.min(totalBelts, ELIGIBILITY_BELTS)}</p><p className="text-[9px] text-[#64748B]">of 10</p></div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-[#777B72]">Dojo overview</p>
+                  <h1 className="mt-1 truncate text-2xl font-extrabold tracking-tight text-[#343A34]">{name}</h1>
+                  <p className="mt-2 text-sm text-[#85877F]">{squad ? 'Kalvian from squad ' + String(squad).replace(/^squad\s*/i, '') : 'Squad not available'}</p>
                 </div>
-                <div className={'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ' + (isEligible ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700')}><CheckCircle2 size={12} /> {isEligible ? 'Criteria met' : 'In progress'}</div>
-                <p className="mt-1 text-[10px] text-[#64748B]">{percentage}% of requirement met</p><p className="mt-1 text-[9px] text-[#94A3B8]">{isEligible ? 'Eligible with 10+ belts' : (ELIGIBILITY_BELTS - totalBelts) + ' more belts needed'}</p>
+                <span className="ml-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F3F2EE] text-2xl" aria-label="Dojo shrine">⛩️</span>
+              </div>
+
+              <div className="flex flex-1 flex-col items-center justify-center py-8">
+                <ProgressRing value={totalBelts} total={28} photo={profilePhoto} name={name} />
+                <p className="mt-12 text-center text-base font-semibold text-[#343A34]">{isEligible ? 'Eligibility criteria achieved' : 'Every belt brings you closer.'}</p>
+                <p className="mt-2 text-center text-sm text-[#85877F]">{isEligible ? 'All qualifying belts earned' : (ELIGIBILITY_BELTS - totalBelts) + ' belts remaining to meet eligibility'}</p>
+              </div>
+
+              <div className="flex w-full shrink-0 items-center justify-between border-t border-[#ECEBE6] pt-4 text-xs text-[#85877F]">
+                <span>Cumulative progress · {percentage}% complete</span>
+                <span>Updated after final results</span>
+              </div>
+            </section>
+
+            <section className="card grid min-h-[280px] grid-cols-1 gap-6 !p-6 sm:grid-cols-2">
+              <div className="flex min-w-0 flex-col rounded-2xl bg-[#F4F7FB] p-5">
+                <div className="flex items-center gap-2"><Target size={17} className="shrink-0 text-[#2563EB]" /><h2 className="text-base font-bold text-[#0F172A]">Belt progress</h2></div>
+                <p className="mt-3 text-3xl font-extrabold text-[#0F172A]">{totalBelts}<span className="ml-1 text-xs font-medium text-[#64748B]">of 28 belts</span></p>
+                <ProgressTimeline entries={timeline.length ? timeline : weekly} />
+                <p className="mt-auto pt-3 text-xs text-[#94A3B8]">Based on recorded test history</p>
+              </div>
+              <div className="flex min-w-0 flex-col items-center justify-center rounded-2xl bg-[#FAFBFD] p-5 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">Qualifying belts</p>
+                <h2 className="mt-1 text-lg font-bold text-[#0F172A]">Eligibility criteria</h2>
+                <div className="relative my-4 flex h-28 w-28 shrink-0 items-center justify-center">
+                  <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full -rotate-90" role="img" aria-label={eligibilityPercentage + '% of eligibility belts earned'}>
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="#E6EBF2" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="#2563EB" strokeWidth="8" strokeLinecap="round" strokeDasharray={2 * Math.PI * 42} strokeDashoffset={(2 * Math.PI * 42) * (1 - eligibilityPercentage / 100)} />
+                  </svg>
+                  <div className="relative"><p className="text-3xl font-extrabold text-[#0F172A]">{Math.min(totalBelts, ELIGIBILITY_BELTS)}</p><p className="text-[10px] text-[#64748B]">of 10</p></div>
+                </div>
+                <div className={'inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold ' + (isEligible ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700')}><CheckCircle2 size={13} /> {isEligible ? 'Criteria met' : 'In progress'}</div>
+                <p className="mt-2 text-xs text-[#64748B]">{eligibilityPercentage}% of requirement met</p>
+                <p className="mt-1 text-[11px] text-[#94A3B8]">{isEligible ? 'Eligible with 10+ belts' : (ELIGIBILITY_BELTS - totalBelts) + ' more belts needed'}</p>
               </div>
             </section>
           </div>
-          <section className="grid min-h-0 grid-cols-2 grid-rows-5 gap-3 overflow-hidden">
-            {LANGUAGE_TILES.map((tile) => <article key={tile.key} className="card flex min-h-0 flex-col justify-between !p-3"><p className="text-xs font-semibold text-[#64748B]">{tile.label}</p><div className="flex items-end justify-between"><p className="text-2xl font-extrabold text-[#0F172A]">{languageCounts[tile.key]}</p><span className="mb-1 h-2 w-10 rounded-full" style={{ backgroundColor: tile.color }} /></div></article>)}
-            {Array.from({ length: 4 }, (_, index) => <div key={'reserved-' + index} aria-hidden="true" className="min-h-0 rounded-[18px] border border-dashed border-[#E6EBF2] bg-[#F8FAFC]" />)}
-            <article className="card col-span-2 flex min-h-0 flex-col !p-3">
-              <h2 className="text-sm font-bold text-[#0F172A]">Mentor remarks</h2>
-              <textarea disabled placeholder="Mentor remarks are coming soon..." className="mt-2 min-h-0 flex-1 resize-none rounded-xl border border-[#E6EBF2] bg-[#F8FAFC] p-3 text-sm text-[#64748B] placeholder:text-[#94A3B8]" />
-              <div className="mt-2 flex shrink-0 items-center justify-between"><span className="text-[10px] text-[#94A3B8]">Coming soon</span><button type="button" disabled className="rounded-lg bg-[#CBD5E1] px-4 py-2 text-xs font-semibold text-white opacity-70">Send · Coming soon</button></div>
-            </article>
-          </section>
+
+          <div className="flex min-w-0 flex-col gap-5">
+            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {LANGUAGE_TILES.map((tile) => (
+                <article key={tile.key} className="card flex min-h-[150px] flex-col justify-between !p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-[#64748B]">{tile.label}</p>
+                    <span className="h-2.5 w-12 rounded-full" style={{ backgroundColor: tile.color }} />
+                  </div>
+                  <div className="flex items-end justify-between">
+                    <p className="text-4xl font-extrabold text-[#0F172A]">{languageCounts[tile.key]}<span className="ml-2 text-sm font-medium text-[#94A3B8]">/ 7</span></p>
+                    <p className="text-xs text-[#94A3B8]">belts earned</p>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-[#EEF2F6]">
+                    <div className="h-full rounded-full" style={{ width: (languageCounts[tile.key] / 7 * 100) + '%', backgroundColor: tile.color }} />
+                  </div>
+                </article>
+              ))}
+            </section>
+
+            <section className="card flex min-h-[380px] flex-1 flex-col !p-6 sm:!p-7">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-[#0F172A]">Mentor remarks</h2>
+                  <p className="mt-1 text-sm text-[#64748B]">Notes and feedback for this student's progress</p>
+                </div>
+                <span className="rounded-xl bg-[#F4F7FB] px-3 py-2 text-xs font-semibold text-[#64748B]">Coming soon</span>
+              </div>
+              <textarea disabled placeholder="Mentor remarks will be available here soon..." className="mt-5 min-h-[250px] w-full flex-1 resize-y rounded-2xl border border-[#E6EBF2] bg-[#F8FAFC] p-5 text-sm leading-7 text-[#64748B] placeholder:text-[#94A3B8]" />
+              <div className="mt-4 flex shrink-0 items-center justify-between">
+                <span className="text-xs text-[#94A3B8]">Remarks feature is under development</span>
+                <button type="button" disabled className="rounded-xl bg-[#CBD5E1] px-5 py-2.5 text-sm font-semibold text-white opacity-70">Send · Coming soon</button>
+              </div>
+            </section>
+          </div>
         </div>
       ) : (!error && <div className="card flex-1 text-center text-sm text-[#64748B]">Student not found.</div>)}
     </div>
