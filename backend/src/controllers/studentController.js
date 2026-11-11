@@ -32,13 +32,9 @@ const normalizeLanguage = (value) => {
 };
 
 const getLatestImprovedLanguages = (student, latestTestResults) => {
-  const canonicalResult = latestTestResults.get(normalizeEmail(student.email));
-  if (canonicalResult) {
-    return [...canonicalResult.improvedLanguages];
-  }
-
-  // Legacy fallback: derive language status from the most recent recorded
-  // test day rather than mixing attempts from older tests.
+  // The aggregated student record already groups attempts by test date.
+  // Use its latest day so all language attempts from that day are considered,
+  // even when their individual timestamps differ.
   const latestDay = [...(student.sameDayProgress || [])]
     .filter((day) => day.date)
     .sort((first, second) => String(second.date).localeCompare(String(first.date)))[0];
@@ -53,7 +49,12 @@ const getLatestImprovedLanguages = (student, latestTestResults) => {
       .filter(Boolean))];
   }
 
-  return [];
+  // Older student records may not contain sameDayProgress. In that case,
+  // use the canonical belt-test collection as the fallback.
+  const canonicalResult = latestTestResults.get(normalizeEmail(student.email));
+  return canonicalResult
+    ? [...canonicalResult.improvedLanguages]
+    : [];
 };
 
 const getLatestTestStatus = (student, latestTestResults) => {
