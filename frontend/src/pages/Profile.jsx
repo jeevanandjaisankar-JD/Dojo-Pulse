@@ -3,6 +3,7 @@ import { User, UserX, LogOut } from 'lucide-react';
 import { getMentorProfile } from '../services/api';
 import { unwrap, humanize } from '../components/StatCard';
 import { useAuth } from '../context/AuthContext';
+import ProfileForm_mentors from '../components/ProfileForm_mentors';
 
 export default function Profile() {
   const { logout } = useAuth();
@@ -33,6 +34,7 @@ export default function Profile() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 pb-28 sm:p-6 md:pb-8 lg:p-8">
       <h1 className="text-3xl font-extrabold tracking-tight">Profile</h1>
+      <ProfileForm_mentors />
 
       {loading ? (
         <div className="card space-y-6">

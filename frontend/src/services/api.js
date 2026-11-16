@@ -37,6 +37,17 @@ export const getMentorProfile = async () => {
   return res.data;
 };
 
+
+export const getProfile = async () => {
+  const res = await api.get('/profile');
+  return res.data;
+};
+
+export const updateProfile = async (profileData) => {
+  const res = await api.put('/profile', profileData);
+  return res.data;
+};
+
 // Dashboard APIs
 export const getDashboardStats = async () => {
   const res = await api.get('/dashboard/stats');

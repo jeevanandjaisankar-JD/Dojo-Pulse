@@ -6,6 +6,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const profileRoutes = require('./routes/profileRoutes');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/profile', profileRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
