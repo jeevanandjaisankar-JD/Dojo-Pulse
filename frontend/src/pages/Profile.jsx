@@ -5,6 +5,7 @@ import {
   updateMentorProfile
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import ProfileForm_mentors from '../components/ProfileForm_mentors';
 
 const EMPTY_PROFILE = {
   name: '',
@@ -197,29 +198,9 @@ export default function Profile() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-4 pb-28 sm:p-6 md:pb-8 lg:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Profile</h1>
-          <p className="mt-1 text-sm text-[#64748B]">View and manage your mentor information.</p>
-        </div>
-        {!loading && !loadError && (
-          editing ? (
-            <div className="flex gap-2">
-              <button type="button" onClick={cancelEdit} disabled={saving} className="inline-flex items-center gap-2 rounded-xl border border-[#CBD5E1] bg-white px-4 py-2.5 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] disabled:opacity-50">
-                <X size={16} /> Cancel
-              </button>
-              <button type="submit" form="mentor-profile-form" disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8] disabled:opacity-60">
-                <Save size={16} /> {saving ? 'Saving…' : 'Save'}
-              </button>
-            </div>
-          ) : (
-            <button type="button" onClick={beginEdit} className="inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8]">
-              <Pencil size={16} /> Edit profile
-            </button>
-          )
-        )}
-      </div>
+    <div className="mx-auto max-w-3xl space-y-6 p-4 pb-28 sm:p-6 md:pb-8 lg:p-8">
+      <h1 className="text-3xl font-extrabold tracking-tight">Profile</h1>
+      <ProfileForm_mentors />
 
       {notice && (
         <div role="status" className={`rounded-xl border px-4 py-3 text-sm font-medium ${notice.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}>

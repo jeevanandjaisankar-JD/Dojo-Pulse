@@ -36,8 +36,14 @@ export const getMentorProfile = async () => {
   return res.data;
 };
 
-export const updateMentorProfile = async (profile) => {
-  const res = await api.put('/auth/profile', profile);
+
+export const getProfile = async () => {
+  const res = await api.get('/profile');
+  return res.data;
+};
+
+export const updateProfile = async (profileData) => {
+  const res = await api.put('/profile', profileData);
   return res.data;
 };
 

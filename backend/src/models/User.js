@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -18,6 +19,11 @@ const userSchema = new mongoose.Schema({
     required: true,
     enum: ['mentor', 'student']
   },
+  professionalRole: {
+    type: String,
+    default: '',
+    trim: true
+  },
   googleId: {
     type: String,
     unique: true,
@@ -27,6 +33,38 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  surname: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  personalEmail: {
+    type: String,
+    default: '',
+    lowercase: true,
+    trim: true
+  },
+  linkedin: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  bio: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  educationalQualifications: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  yearOfJoining: {
+    type: Number,
+    default: null
+  },
+
+  // New mentor profile fields
   dateOfBirth: {
     type: Date,
     default: null
@@ -36,12 +74,12 @@ const userSchema = new mongoose.Schema({
     default: '',
     trim: true
   },
-  qualification: {
+  highestQualification: {
     type: String,
     default: '',
     trim: true
   },
-  degree: {
+  degreeSpecialization: {
     type: String,
     default: '',
     trim: true
@@ -51,16 +89,11 @@ const userSchema = new mongoose.Schema({
     default: '',
     trim: true
   },
-  completionYear: {
+  yearOfCompletion: {
     type: Number,
     default: null
   },
-  designation: {
-    type: String,
-    default: '',
-    trim: true
-  },
-  expertise: {
+  areaOfExpertise: {
     type: String,
     default: '',
     trim: true
@@ -72,10 +105,9 @@ const userSchema = new mongoose.Schema({
   },
   yearsOfExperience: {
     type: Number,
-    default: null,
-    min: 0,
-    max: 60
+    default: null
   },
+
   isActive: {
     type: Boolean,
     default: true
