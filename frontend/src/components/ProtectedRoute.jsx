@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -24,6 +23,10 @@ const ProtectedRoute = ({ allowedRoles = ['mentor'] }) => {
   }
 
   if (!allowedRoles.includes(user.role)) {
+    const requiredRoleLabel = allowedRoles.length === 1
+      ? allowedRoles[0] === 'mentor' ? 'mentors' : 'students'
+      : 'authorized users';
+
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F9FC] p-6">
         <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-lg">
@@ -32,8 +35,8 @@ const ProtectedRoute = ({ allowedRoles = ['mentor'] }) => {
           </h1>
 
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            This section is available to mentors only. Your account does not
-            have permission to access it.
+            This section is available to {requiredRoleLabel} only. Your account
+            does not have permission to access it.
           </p>
 
           <button

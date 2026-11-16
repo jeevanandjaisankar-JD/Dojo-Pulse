@@ -1,9 +1,9 @@
-
 const express = require('express');
 const { rateLimit } = require('express-rate-limit');
 
 const {
   getProfile,
+  updateMentorProfile,
   getMentorsRoster
 } = require('../controllers/authController');
 
@@ -27,6 +27,7 @@ const googleLoginLimiter = rateLimit({
 router.post('/google', googleLoginLimiter, googleLogin);
 
 router.get('/profile', authMiddleware, getProfile);
+router.put('/profile', authMiddleware, requireRole('mentor'), updateMentorProfile);
 
 router.get(
   '/roster',

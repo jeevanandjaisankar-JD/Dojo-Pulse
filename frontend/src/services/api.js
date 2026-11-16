@@ -1,9 +1,8 @@
-
 import axios from 'axios';
 import { getToken } from './authService';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 30000,
 });
 
@@ -74,6 +73,7 @@ export const getImprovementsAnalytics = async () => {
 // Upload APIs
 export const uploadDojoFile = async (formData) => {
   const res = await api.post('/uploads', formData, {
+    timeout: 120000,
     headers: {
       'Content-Type': 'multipart/form-data'
     }

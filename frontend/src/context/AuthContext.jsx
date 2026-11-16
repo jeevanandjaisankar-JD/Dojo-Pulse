@@ -1,17 +1,13 @@
-
 import React, {
   createContext,
   useContext,
   useState,
   useEffect,
-  useCallback
+  useCallback,
+  useRef
 } from 'react';
 
-import {
-  loginWithGoogle,
-  getMentorProfile
-} from '../services/api';
-
+import { loginWithGoogle, getMentorProfile } from '../services/api';
 import {
   getToken,
   setToken,
@@ -45,12 +41,18 @@ const saveUser = (user) => {
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(readSavedUser);
   const [token, setTokenState] = useState(getToken);
-  const [loading, setLoading] = useState(true);
+  // A previously authenticated user can enter the app immediately while
+  // the saved JWT is checked in the background.
+  const [loading, setLoading] = useState(
+    () => Boolean(getToken() && !readSavedUser())
+  );
+  const skipVerificationForToken = useRef(null);
 
   const logout = useCallback(() => {
     logoutSession();
     setTokenState(null);
     setUser(null);
+    setLoading(false);
     localStorage.removeItem(USER_STORAGE_KEY);
     localStorage.removeItem(LEGACY_USER_STORAGE_KEY);
   }, []);
@@ -58,27 +60,48 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     let cancelled = false;
 
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return undefined;
+    }
+
+    // A successful Google login already returned a server-verified user.
+    // Do not immediately call /auth/profile a second time for that same login.
+    if (skipVerificationForToken.current === token) {
+      skipVerificationForToken.current = null;
+      setLoading(false);
+      return undefined;
+    }
+
+    const hasCachedUser = Boolean(readSavedUser());
+    if (!hasCachedUser) setLoading(true);
+    else setLoading(false);
+
     const verifySession = async () => {
       try {
-        if (!token) {
-          setUser(null);
-          return;
-        }
-
         const data = await getMentorProfile();
-
         if (cancelled) return;
 
-        const profile = data.user || data.mentor;
+        const profile = data?.user || data?.mentor;
 
-        if (data.success && profile && profile.role) {
+        if (data?.success && profile?.role) {
           setUser(profile);
           saveUser(profile);
         } else {
           logout();
         }
-      } catch {
-        if (!cancelled) logout();
+      } catch (error) {
+        if (cancelled) return;
+
+        const status = error?.response?.status;
+        // Only clear a session when the server explicitly rejects it.
+        // Network errors and temporary server wake-ups must not sign users out.
+        if (status === 401 || status === 403) {
+          logout();
+        } else if (!hasCachedUser) {
+          setUser(null);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -102,9 +125,13 @@ const AuthProvider = ({ children }) => {
     }
 
     setToken(data.token);
-    setTokenState(data.token);
     setUser(data.user);
     saveUser(data.user);
+
+    // Mark the next token effect as already verified by /auth/google.
+    skipVerificationForToken.current = data.token;
+    setTokenState(data.token);
+    setLoading(false);
 
     return {
       success: true,
@@ -112,7 +139,6 @@ const AuthProvider = ({ children }) => {
     };
   };
 
-  // Preserve the alias used by existing mentor dashboard components.
   const mentor = user?.role === 'mentor' ? user : null;
 
   return (

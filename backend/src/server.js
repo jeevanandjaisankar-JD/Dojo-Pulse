@@ -29,9 +29,7 @@ const startServer = async () => {
   });
 };
 
-startServer().catch(() => {
-  console.error(
-    '[Server] Startup failed. Check the deployment environment configuration and database connectivity.'
-  );
+startServer().catch((error) => {
+  console.error('[Server] Startup failed:', error.message);
   process.exit(1);
 });
